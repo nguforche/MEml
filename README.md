@@ -1,5 +1,5 @@
 # MEml: Mixed Effect machine learning 
-This package provides some machine learning methods for longitudinal and clustered data based on the classic generalized linear mixed effect model.  
+This package provides machine learning methods for longitudinal and clustered data based on the classic generalized linear mixed effect model.  
 
 ## Why Use lme4
   - a data mining approach
@@ -14,7 +14,7 @@ Install via devtools:
 > devtools::install_github("nguforche/MEml")
 ```
 ## example 
-- Run the code example in the demo folder 
+- Run the example in the demo folder 
 
 
 
