@@ -1,0 +1,18 @@
+Package: MEml
+Title: Mixed Effect Machine Learning
+Version: 0.0.1
+Authors@R: person("Che", "Ngufor", email = "Ngufor.Che@mayo.edu",
+    role = c("aut", "cre"))
+Description: Machine learning methods for longitudinal and clustered data based
+    on standard generalized linear mixed effect model, regression trees, random forest, SVM, and  
+    generalized boosted machines.
+Depends: R (>= 3.1.2)
+Imports: PresenceAbsence, caret, rpart, lme4, rpart.plot, partykit,
+        Matrix, vcd, grid, plyr, inTrees, gbm, DMwR, kernlab
+License: GPL(>= 3)
+LazyData: true
+NeedsCompilation: no
+RoxygenNote: 6.1.1
+Packaged: 2018-10-10 18:51:34 UTC
+Author: Che Ngufor [aut, cre]
+Maintainer: Che Ngufor <Ngufor.Che@mayo.edu>
