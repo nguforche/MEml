@@ -1,3 +1,4 @@
+library(MEml)
 library(Formula)
 library(gbm)
 library(plyr)
@@ -10,15 +11,8 @@ library(class)
 library(Hmisc)
 library(kernlab)
 require(flexmix)
-
 require(gplots)
 require(bayou)
-
-library(devtools)
-library(roxygen2)
-Rcode <- as.package("C:/Users/m133937/Dropbox/Research/TrajectoryAnalysis/computation/RpackageMEml")
-load_all(Rcode)
-document(Rcode)
 
 ### predict longidutinal profile of left ventricular mass index (increase or normal) 
 ### in  patients undergoing aortic valve surgery.
@@ -94,12 +88,8 @@ rhs.vars <- c("sex",
 rand.vars= "time"  ## random effect variables 
 order.vars = "time"
 
-document(Rcode)
-
 ######
 form <- as.formula(paste0(paste0(resp.vars, " ~"), paste0(rhs.vars, collapse = "+"))) 
-
-document(Rcode)
 
 model <- MEmixgbm(form = form, dat=dat, groups = id,  rand.vars= rand.vars,  para = para,   
                 max.iter =20, include.RE =FALSE, maxdepth=5, k=3, krange = 2:5, decay = 0.05)
@@ -156,7 +146,6 @@ col1 <- c(makeTransparent(col[1], alpha = 20), makeTransparent(col[2], alpha=20)
 col2 <- c(col1, col)
 
 
-png(filename ="C:/Users/m133937/Dropbox/Research/VirtualReality/Rpackage/Vira/inst/traj.png", width = 1050, height = 850)
 pp <- ggplot() + 
   geom_line(data = d1, aes(x = time, y = risk, group = id, color = cluster, size = cluster)) +  
   geom_line(data = d2, aes(x = time, y = risk, group = id, color = cluster, size = cluster )) +
@@ -172,7 +161,7 @@ pp <- ggplot() +
         legend.title = element_text(size=18,face="bold"),
         axis.text.y = element_text(size = 18, face="bold",colour = "gray40"))
 print(pp)
-dev.off()
+
 
 
 
