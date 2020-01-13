@@ -6,12 +6,12 @@
 
 #' @name MErf
 
-#' @param X  data.frame with predictors 
-#' @param Y  binary response vector 
+#' @param form formula  
+#' @param dat  data.frame with predictors 
 #' @param groups character name of the column containing the group identifier
 #' @param rand.vars random effect variables 
 #' @param para named list of gbm training parameters 
-#' @param lme.family glmer control 
+#' @param glmer.Control glmer control 
 #' @param tol convergence tolerance 
 #' @param max.iter maximum number of iterations  
 #' @param include.RE (logical) to include random effect Zb as predictor in gbm?  
@@ -20,7 +20,7 @@
 #' @param type of predictions of gbm to pass to lme4 as population estimates (these will be used as offset) 
 #' @param \dots Further arguments passed to or from other methods.
 #' @return An object of class MEgbm; a list with items 
-#' \item{rffit}{fitted random forest model}
+#' \item{rf.fit}{fitted random forest model}
 #' \item{glmer.fit}{fitted mixed effect logistic regression model}
 #' \item{logLik}{log likelihood of mixed effect logistic regression} 
 #' \item{random.effects}{random effect parameter estimates}
@@ -32,6 +32,8 @@
 #' \item{fitted.class}{fitted class labels for final model}
 #' \item{train.perf}{various performance measures for final model on training set}
 #' \item{threshold}{classification cut-off}
+#' \item{predRules}{fitted rules}
+#' \item{Y.star}{fitted transform outcome}
 #
 #' @author  Che Ngufor <Ngufor.Che@@mayo.edu>
 #
@@ -168,8 +170,8 @@ MErfRules <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,
       r <- as.numeric(sqrt(t(b - b.old)%*%(b-b.old)))
       b.old <- b
     } 
-    #if(verbose) 
-    print(paste("Error: ", r))    
+#    if(verbose) 
+#    print(paste("Error: ", r))    
     if( r < tol) break     
   } ## for loop 
   

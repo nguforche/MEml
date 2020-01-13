@@ -7,7 +7,7 @@ Description: Machine learning methods for longitudinal and clustered data based
     on standard generalized linear mixed effect model, regression trees, random forest, SVM, and  
     generalized boosted machines.
 Depends: R (>= 3.1.2)
-Imports: PresenceAbsence, caret, rpart, lme4, rpart.plot, partykit,
+Imports: PresenceAbsence, caret, rpart, lme4, rpart.plot, partykit,RRF,
         Matrix, vcd, grid, plyr, inTrees, gbm, DMwR, kernlab
 License: GPL(>= 3)
 LazyData: true

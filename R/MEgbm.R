@@ -6,13 +6,12 @@
   
 #' @name MEgbm
 
-#' @param X  data.frame with predictors 
-#' @param Y  binary response vector 
+#' @param form formula  
+#' @param dat  data.frame with predictors 
 #' @param groups character name of the column containing the group identifier
 #' @param rand.vars random effect variables 
-#' @param gbm.dist gbm loss function   
 #' @param para named list of gbm training parameters 
-#' @param lme.family glmer control 
+#' @param glmer.Control glmer control 
 #' @param tol convergence tolerance 
 #' @param max.iter maximum number of iterations  
 #' @param include.RE (logical) to include random effect Zb as predictor in gbm?  
@@ -25,7 +24,6 @@
 #' \item{glmer.fit}{fitted mixed effect logistic regression model}
 #' \item{logLik}{log likelihood of mixed effect logistic regression} 
 #' \item{random.effects}{random effect parameter estimates}
-#' \item{boost.form}{gbm formula for fitted model}
 #' \item{glmer.form}{lmer4 formula} 
 #' \item{glmer.CI}{estimates of mixed effect logistic regression with 
 #'     approximate confidence intervals on the logit scale. More accurate values 
@@ -34,6 +32,8 @@
 #' \item{fitted.class}{fitted class labels for final model}
 #' \item{train.perf}{various performance measures for final model on training set}
 #' \item{threshold}{classification cut-off}
+#' \item{predRules}{fitted rules}
+#' \item{Y.star}{fitted transform outcome}
 #
 #' @author  Che Ngufor <Ngufor.Che@@mayo.edu>
 #
@@ -45,142 +45,6 @@
 #' @import lme4 caret partykit inTrees gbm
 NULL 
 #
-#' @rdname MEgbm  
-#' @export
-MEgbm  <- function(X, ...) UseMethod("MEgbm")
-#
-#' @rdname MEgbm 
-#' @export
-#' @examples
-#' \dontrun{
-#' set.seed(12345)
-#' mod <- MEgbm(form, rand.form, data)) 
-#'
-#' }
-#
-MEgbm <- function(X, Y, groups = NULL, rand.vars="1", para = NULL, lme.family = binomial,  
-                 tol= 1e-5, max.iter =100, include.RE =TRUE, verbose = FALSE, 
-                 likelihoodCheck = TRUE, ...){
-                
-     if(is.null(groups)) stop("please provide grouping variable")
-     Y <- as.vector(Y) 
-     dat <- cbind.data.frame(response = Y, X)   
-     resp.vars <- "response"      
-     dat[, resp.vars] <- as.numeric(factor(dat[, resp.vars]))-1  
-     X[, groups] <- NULL
-     Target <- Y 
-     Y <- factor(Y); levels(Y) <- c("No", "Yes")	 
-         
-    old.lik <- -Inf    
-	if(likelihoodCheck == FALSE){
-	n.re <- sum(rand.vars != 1)+1  
-    b.old <-rep(0, n.re*nlevels(factor(dat[, groups])))  ## initial random effect parameters 
-    }
-
-### initial random effect component: fit a LME model with no fixed effect, ie 
-### a priori known mean of 0     	
-form.glmer <- as.formula(paste0("response ~ ", paste0(c("1 + ", 
- "(", paste0(c(rand.vars), collapse = "+"), "|", groups, ")"), collapse = "")))             
-
-	glmer.fit <- glmer(form.glmer, data= dat,family = lme.family, 
-	             control = glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-		          nAGQ=  0, verbose = as.numeric(verbose))
-		          
-	pp = predict(glmer.fit, newdata = dat, type = "response")  
-	pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))     
-	w = pp*(1-pp)    		              
-  Y.star <- qlogis(pp) + (Target-pp)/w         
-### get the random effect component 
-   
-	Zt <-  getME(glmer.fit, name = "Zt")
-	b  <-  getME(glmer.fit, name = "b")	
-	Zb <-  as.numeric(cprod(x = Zt, y = b))       
-if(include.RE)	X[, "Zb"] <- Zb 
-
-dat[, "tree.fit"] <- rep(0, nrow(dat))
-
-form.glmer <- as.formula(paste0("response ~ ", paste0(c("tree.fit + ", 
-             "(", paste0(c(rand.vars), collapse = "+"), "|", groups, ")"), collapse = "")))             
-
-for(ii in 1:max.iter){    	  	
-#### fit boosted regression trees 
-   if(para$opt.para)
-	gbmfit <-  train(X, Y.star,  method = "gbm", trControl = 
-	           trainControl(method = para$method, number =  para$number), 
-	           verbose = verbose,  tuneLength = para$tuneLength, distribution = "gaussian") 
-   else 
-	gbmfit <-  train(X, Y.star,  method = "gbm", trControl = trainControl(method = "none"),  
-	           verbose = verbose, tuneGrid = data.frame(n.trees = para$n.trees, 
-               interaction.depth=para$interaction.depth, shrinkage=para$shrinkage), 
-             distribution = "gaussian") 
-#   if(type == "prob")             
-#   pp <-  predict(gbmfit, newdata = X, type = "prob")[, 2]
-#   else 
-#   pp <-  factor(predict(gbmfit, newdata = X, type = "raw"))
-    fitted <-  predict(gbmfit, newdata = X, type = "raw")  
-    dat[, "tree.fit"] <- fitted
-
-###  Fit mixed effect logistic regression model with nodes as fixed effect predictors
-	glmer.fit <- glmer(form.glmer, data= dat,family = lme.family, 
-	              control = glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-		          nAGQ=  0, verbose = 0)
-
-### compute the adjusted response 
-### first get the random effect component 
-
-  Zt <-  getME(glmer.fit, name = "Zt")
-  b  <-  getME(glmer.fit, name = "b")	
-  Zb <-  as.numeric(cprod(x = Zt, y = b))
-if(include.RE)   X[,"Zb"] <- Zb 
-
-pp <- sigmoid(fitted + Zb) 
-pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))  
-
-#   pp = predict(glmer.fit, newdata = dat, type = "response")  
-#	  pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))     
-    w = pp*(1-pp)
-    Y.star <- qlogis(pp) + (Target-pp)/w
-
-### test for convergence             
-   if(likelihoodCheck){
-	new.lik <- as.numeric(logLik(glmer.fit))
-	r <- as.numeric(sqrt(t(new.lik - old.lik)%*%(new.lik-old.lik)))
-	old.lik <- new.lik	
-	} else {
-	r <- as.numeric(sqrt(t(b - b.old)%*%(b-b.old)))
-	b.old <- b
-    } 
-	#if(verbose) 
-	print(paste("Error: ", r))    
-	if( r < tol) break 
-	
-	} ## for loop 
-	
-	if(r > tol) warning("EM algorithm did not converge")
-
-fitted = predict(gbmfit, newdata = X, type = "raw") + Zb   
-pp <- sigmoid(fitted) 
-pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))  
-
-  perf <- Performance.measures(pp, Y)
-	threshold <- perf$threshold	
-  cls <-ifelse(pp >= threshold, "Yes", "No")
-
-### get confidence intervals for mixed effect logistic regresion: rough estimates using the SEs
-	se <- sqrt(diag(as.matrix(vcov(glmer.fit)))) 
-  	tab <- cbind(Est = fixef(glmer.fit), LL = fixef(glmer.fit) - 1.96 * se, 
-  	UL = fixef(glmer.fit) + 1.96 *se)
-
-res <- list(gbmfit = gbmfit, glmer.fit = glmer.fit,  groups = groups, 
-         rand.vars=rand.vars, logLik=as.numeric(logLik(glmer.fit)), 
-         random.effects =ranef(glmer.fit), rand.form = form.glmer, 
-         glmer.CI =tab, fitted.probs = pp, 
-         fitted.class = cls, train.perf = perf, threshold = threshold, 
-         include.RE=include.RE, rhs.vars = colnames(X))
-class(res) <- "MEgbm"         
-return(res)         
-}
-
 #
 #' @rdname MEgbm  
 #' @export
@@ -191,7 +55,7 @@ MEgbmRules  <- function(X, ...) UseMethod("MEgbmRules")
 #
 MEgbmRules <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,   
                        tol= 1e-5, max.iter =100, include.RE =FALSE, verbose = FALSE, maxdepth=5,
-                       glmer.Control=glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
+                       glmer.Control= glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
                        nAGQ=0, likelihoodCheck = TRUE,
                        K=3, decay = 0.05, ...){
     
@@ -204,7 +68,7 @@ MEgbmRules <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,
   
   old.lik <- -Inf    
   if(likelihoodCheck == FALSE){
-    n.re <- sum(rand.vars != 1)+1  
+    n.re <- sum(rand.vars != 1)+1 
     b.old <-rep(0, n.re*nlevels(factor(dat[, groups])))  ## initial random effect parameters 
   }
   

@@ -5,14 +5,6 @@
 \alias{MEgbmRules}
 \title{Mixed Effect GBM}
 \usage{
-MEgbm(X, Y, groups = NULL, rand.vars = "1", para = NULL,
-  lme.family = binomial, tol = 1e-05, max.iter = 100,
-  include.RE = TRUE, verbose = FALSE, likelihoodCheck = TRUE, ...)
-
-MEgbm(X, Y, groups = NULL, rand.vars = "1", para = NULL,
-  lme.family = binomial, tol = 1e-05, max.iter = 100,
-  include.RE = TRUE, verbose = FALSE, likelihoodCheck = TRUE, ...)
-
 MEgbmRules(form, dat, groups = NULL, rand.vars = "1", para = NULL,
   tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
   maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
@@ -26,17 +18,15 @@ MEgbmRules(form, dat, groups = NULL, rand.vars = "1", para = NULL,
   likelihoodCheck = TRUE, K = 3, decay = 0.05, ...)
 }
 \arguments{
-\item{X}{data.frame with predictors}
+\item{form}{formula}
 
-\item{Y}{binary response vector}
+\item{dat}{data.frame with predictors}
 
 \item{groups}{character name of the column containing the group identifier}
 
 \item{rand.vars}{random effect variables}
 
 \item{para}{named list of gbm training parameters}
-
-\item{lme.family}{glmer control}
 
 \item{tol}{convergence tolerance}
 
@@ -46,11 +36,11 @@ MEgbmRules(form, dat, groups = NULL, rand.vars = "1", para = NULL,
 
 \item{verbose}{verbose for lme4}
 
+\item{glmer.Control}{glmer control}
+
 \item{likelihoodCheck}{(logical) to use log likelihood of glmer to check for convergence?}
 
 \item{\dots}{Further arguments passed to or from other methods.}
-
-\item{gbm.dist}{gbm loss function}
 
 \item{type}{of predictions of gbm to pass to lme4 as population estimates (these will be used as offset)}
 }
@@ -60,7 +50,6 @@ An object of class MEgbm; a list with items
 \item{glmer.fit}{fitted mixed effect logistic regression model}
 \item{logLik}{log likelihood of mixed effect logistic regression} 
 \item{random.effects}{random effect parameter estimates}
-\item{boost.form}{gbm formula for fitted model}
 \item{glmer.form}{lmer4 formula} 
 \item{glmer.CI}{estimates of mixed effect logistic regression with 
     approximate confidence intervals on the logit scale. More accurate values 
@@ -69,18 +58,13 @@ An object of class MEgbm; a list with items
 \item{fitted.class}{fitted class labels for final model}
 \item{train.perf}{various performance measures for final model on training set}
 \item{threshold}{classification cut-off}
+\item{predRules}{fitted rules}
+\item{Y.star}{fitted transform outcome}
 }
 \description{
 Trains a Mixed Effect gradient boosted machine  
 for longitudinal continuous, binary and count data. A rule based version or these methods 
 using the \code{inTree} package is also implemented(see [1])
-}
-\examples{
-\dontrun{
-set.seed(12345)
-mod <- MEgbm(form, rand.form, data)) 
-
-}
 }
 \references{
 Che Ngufor,  Holly Van Houten, Brian S. Caffo , Nilay D. Shah, Rozalina G. McCoy 

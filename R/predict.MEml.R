@@ -208,6 +208,8 @@ predict.MEglmTree <- function(object, newdata,
 return(pred)
 }
  
+
+
 #' @name predict.MEml     
 #' @export 
 predict.MEgbm <- function(object, newdata, 
@@ -239,124 +241,7 @@ if(object$include.RE)  newdata[,"Zb"] <- Zb
 sigmoid(predict(object$gbmfit, newdata[, object$rhs.vars], type = "raw") + Zb) 
 }
 
-#' @name predict.MEml     
-#' @export 
-predict.MEgbmRules <- function(object, newdata, 
-                          type = c("prob", "class")[1], ...){
-  ### Get training group identifiers 
-#  ID <-  getME(object$glmer.fit, name = "flist")[[1]]
-  
-  ### If new objects are not in the traing set the available options are  
-  ### 1) set random effect to zero and predict fixed effect only
-  ### 2) TODO use average cluster random effect:   
-#  if(sum(ID%in%newdata[, object$groups])==0) {
-#    newdata[,"Zb"] <- rep(0, nrow(newdata))	   
-#     stop("No cases found in the data") 	   
-#  } else {            
-    re.form <- reOnly(formula(object$glmer.fit)) # RE formula only	
-    res <- mkNewReTrms(object=object$glmer.fit, newdata = newdata, re.form = re.form, 
-                       allow.new.levels=FALSE)
-    b <- res$b 
-    Zt <- res$Zt        
-    Zb <- as.numeric(cprod(x = Zt, y = b))    
-#    newdata[, object$groups] <- NULL 	   
-#    newdata[,"Zb"] <- Zb
-if(object$include.RE)  newdata[,"Zb"] <- Zb
 
-    Target <- predict(object$gbmfit, newdata = newdata, type = "response", n.trees = object$para$n.trees)    
-    fitted = Target + Zb   
-    pp <- sigmoid(fitted) 
-    prob <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))            
-    predRules <- myapplyLearner(object$gbmRules, newdata[,object$rhs.vars])
-#     newdata[, "TreeConditions"] <- factor(pred$predCond)    
-#     levels(newdata[, "TreeConditions"]) <- object$rule.levels     
-# #    pred$Values <- mapLabels(pred$predY, object$splitBins)
-# #    pred.Rules <- do.call(cbind.data.frame, pred)  
-#     pp <- predict(object$glmer.fit, newdata = newdata, type = "response")   
-#     pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))     
-#     w = pp*(1-pp)
-#     Y <- ifelse(prob >= object$threshold, 1, 0) 
-#     Y.star <- qlogis(pp) + (Y - pp)/w    
-#     Target  <- Y.star  - Zb
-#     target <- round(w*(Target+ Zb -  qlogis(pp) ) + pp) 
-#     target <- ifelse(target==1, "Yes", "No")
-#     pred.Rules$status <- target 
-    
-    
-if(type == "class"){     	
-  pred <-ifelse(prob >= object$threshold, "Yes", "No")
-} else if(type == "prob") {
-  pred =  cbind(1-prob, prob)
-  colnames(pred) = c("0", "1")
-} else stop("type unknown") 
-		 
-return(list(Y.star = fitted, pred=pred, predRules = predRules))
-}
-
-#' @name predict.MEml     
-#' @export 
-predict.MErfRules <- function(object, newdata, 
-                               type = c("prob", "class")[1], ...){
-  ### Get training group identifiers 
-  #  ID <-  getME(object$glmer.fit, name = "flist")[[1]]
-  
-  ### If new objects are not in the traing set the available options are  
-  ### 1) set random effect to zero and predict fixed effect only
-  ### 2) TODO use average cluster random effect:   
-  #  if(sum(ID%in%newdata[, object$groups])==0) {
-  #    newdata[,"Zb"] <- rep(0, nrow(newdata))     
-  #     stop("No cases found in the data") 	   
-  #  } else { 
-### predict rules 
-#  pred <- myapplyLearner(object$learner, newdata[,object$rhs.vars])
-#   predRules <- myapplyLearner(object$rfRules, newdata[,object$rhs.vars])
-#   
-#   print(predRules)
-#   stop()
-  
-  re.form <- reOnly(formula(object$glmer.fit)) # RE formula only
-
-  res <- mkNewReTrms(object=object$glmer.fit, newdata = newdata, re.form = re.form, 
-                     allow.new.levels=FALSE)
-  b <- res$b 
-  Zt <- res$Zt        
-  Zb <- as.numeric(cprod(x = Zt, y = b))    
-  #    newdata[, object$groups] <- NULL 	   
-  #    newdata[,"Zb"] <- Zb
-  if(object$include.RE)  newdata[,"Zb"] <- Zb
-    
-  Target <- predict(object$rf.fit, newdata = newdata, type = "response")    
-  fitted = Target + Zb   
-  pp <- sigmoid(fitted) 
-  prob <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))            
-  predRules <- myapplyLearner(object$rfRules, newdata[,object$rhs.vars])
-  #     newdata[, "TreeConditions"] <- factor(pred$predCond)    
-  #     levels(newdata[, "TreeConditions"]) <- object$rule.levels     
-  # #    pred$Values <- mapLabels(pred$predY, object$splitBins)
-  # #    pred.Rules <- do.call(cbind.data.frame, pred)  
-  #     pp <- predict(object$glmer.fit, newdata = newdata, type = "response")   
-  #     pp <- ifelse(abs(pp -1) <= 1e-16, pp-1e-16, ifelse(pp <= 1e-16, pp+1e-16, pp))     
-  #     w = pp*(1-pp)
-  #     Y <- ifelse(prob >= object$threshold, 1, 0) 
-  #     Y.star <- qlogis(pp) + (Y - pp)/w    
-  #     Target  <- Y.star  - Zb
-  #     target <- round(w*(Target+ Zb -  qlogis(pp) ) + pp) 
-  #     target <- ifelse(target==1, "Yes", "No")
-  #     pred.Rules$status <- target 
-  
-  
-  if(type == "class"){     	
-    pred <-ifelse(prob >= object$threshold, "Yes", "No")
-  } else if(type == "prob") {
-    pred =  cbind(1-prob, prob)
-    colnames(pred) = c("0", "1")
-  } else stop("type unknown") 
-  
-  return(list(Y.star = fitted, pred=pred, predRules = predRules))
-}
-
- 
- 
 #' @name predict.MEml     
 #' @export 
 predict.MEmixgbm <- function(object, newdata, 

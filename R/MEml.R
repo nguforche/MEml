@@ -5,8 +5,7 @@
 #' @name  MEml 
 #' @param lag time lag between predictors and outcome: e.g if lag = 1, then we use predictors in current  
 #'         vist to predict outcome in the next visit.  
-#' @param classifier character or character vector with names of classification models. 
-#'                    See names(\code{TrainAllModels}()). 
+#' @param classifier character or character vector with names of classification models. See names(\code{Train.Test}()) for list of possible models. 
 #' @param dat  data frame with predictors and outcome  
 #' @param id character name of the column containing the group identifier
 #' @param rhs.vars  caracter vector of predictors
@@ -21,10 +20,12 @@
 #
 #' @details
 #' \enumerate{
-#'  \item \code{MEml.lag} Takes the full data set and calls \code{LongiLagSplit} to split data into lagged 
-#'  training and testing.  \code{MEml.lag} also trains the MOB and CTree models (see [1]).  
-#'  \item  \code{MEml} is the same as \code{MEml.lag}, except that you pass in the training and test set. So you can 
-#'  call \code{LongiLagSlit} and pass the derived training and test sets to \code{MEml2}.  
+#'  \item \code{MEml_lag} Takes the full data set and calls \code{LongiLagSplit} to split data into lagged 
+#'  training and testing.  \code{MEml_lag} also trains the MOB and CTree models (see [1]).  
+#'  \item  \code{MEml} is the same as \code{MEml_lag}, except that you pass in the training and test set. So you can 
+#'  call \code{LongiLagSlit} and pass the derived training and test sets to \code{MEml}.  
+#'  \item  \code{MEml2} is the same as \code{MEml}, except that you don't pass in the test set. 
+#'  Also, it is currently implemented only for the GLMER, MEgbm and MErf models.  
 #' } 
 #' 
 #' @references
@@ -90,7 +91,7 @@ NULL
 #' }
 #
 
-MEml.lag <- function(lag=NULL, classifier, dat, id, rhs.vars, resp.vars, order.vars, rand.vars=NULL,  
+MEml_lag <- function(lag=NULL, classifier, dat, id, rhs.vars, resp.vars, order.vars, rand.vars=NULL,  
                      reg.vars=NULL, part.vars=NULL, para, max.iter = 10, seed = 1, return.model = TRUE){
 
 
@@ -138,6 +139,9 @@ names(mod.res) <- classifier
 return(mod.res)
 }
 
+
+
+
 ### simple train and test splits 
 #' @rdname MEml    
 #' @export
@@ -172,6 +176,33 @@ return(mod.res)
 }
 
 
+
+
+### simple train and test splits 
+#' @rdname MEml    
+#' @export
+MEml2 <- function(classifier, data, id,  resp.vars, rhs.vars, rand.vars=NULL, para,  ...){
+  
+  train_models <- lapply(Train_MEml(), function(x) x)  
+  
+  mod.res <- tryCatch(
+    {
+      lapply(classifier, function(xx, ...) {
+        ##cat("Now Running Classifier:", xx,  "\n")
+        
+        trn <- data[, unique(c(resp.vars, rhs.vars, rand.vars, id)), drop = FALSE]
+
+        train_models[[xx]](trn=trn, para=para, resp.vars=resp.vars, rand.vars=rand.vars, rhs.vars=rhs.vars, groups = id) 
+      })
+    }, error=function(e){ 
+      cat("Error in the Expression: ",  paste(e$call, collapse= ", "), 
+          ": original error message = ", e$message, "\n") 
+      list()
+    }) ## tryCatch
+  collect.garbage()
+  names(mod.res) <- classifier
+  return(mod.res)
+}
 
 
 

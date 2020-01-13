@@ -2,24 +2,27 @@
 % Please edit documentation in R/MEml.R
 \name{MEml}
 \alias{MEml}
-\alias{MEml.lag}
+\alias{MEml_lag}
+\alias{MEml2}
 \title{Calls the MEml models: MEgbm, MEgbmrules, MErfrules, MEglmtree, MECTree, etc. 
 The training and test data can be split into lagged training and testing as described in [1]}
 \usage{
-MEml.lag(lag = NULL, classifier, dat, id, rhs.vars, resp.vars,
+MEml_lag(lag = NULL, classifier, dat, id, rhs.vars, resp.vars,
   order.vars, rand.vars = NULL, reg.vars = NULL, part.vars = NULL,
   para, max.iter = 10, seed = 1, return.model = TRUE)
 
 MEml(classifier, dat.trn, dat.tst, id, rhs.vars, resp.vars,
   rand.vars = NULL, reg.vars = NULL, part.vars = NULL, para,
   max.iter = 10, seed = 1, return.model = FALSE, ...)
+
+MEml2(classifier, data, id, resp.vars, rhs.vars, rand.vars = NULL, para,
+  ...)
 }
 \arguments{
 \item{lag}{time lag between predictors and outcome: e.g if lag = 1, then we use predictors in current
 vist to predict outcome in the next visit.}
 
-\item{classifier}{character or character vector with names of classification models. 
-See names(\code{TrainAllModels}()).}
+\item{classifier}{character or character vector with names of classification models. See names(\code{Train.Test}()) for list of possible models.}
 
 \item{dat}{data frame with predictors and outcome}
 
@@ -50,10 +53,12 @@ The training and test data can be split into lagged training and testing as desc
 }
 \details{
 \enumerate{
- \item \code{MEml.lag} Takes the full data set and calls \code{LongiLagSplit} to split data into lagged 
- training and testing.  \code{MEml.lag} also trains the MOB and CTree models (see [1]).  
- \item  \code{MEml} is the same as \code{MEml.lag}, except that you pass in the training and test set. So you can 
- call \code{LongiLagSlit} and pass the derived training and test sets to \code{MEml2}.  
+ \item \code{MEml_lag} Takes the full data set and calls \code{LongiLagSplit} to split data into lagged 
+ training and testing.  \code{MEml_lag} also trains the MOB and CTree models (see [1]).  
+ \item  \code{MEml} is the same as \code{MEml_lag}, except that you pass in the training and test set. So you can 
+ call \code{LongiLagSlit} and pass the derived training and test sets to \code{MEml}.  
+ \item  \code{MEml2} is the same as \code{MEml}, except that you don't pass in the test set. 
+ Also, it is currently implemented only for the GLMER, MEgbm and MErf models.  
 }
 }
 \examples{

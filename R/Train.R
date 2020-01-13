@@ -1,116 +1,3 @@
-#' Train, Validate and Test various models:   
-# 
-#' Functions to train, select best hyper-paramters, select best classification thresholds 
-#'  and evaluate final model on the test set  using a number of machine 
-#' learning classification algorithms 
-# 
-#' @name Train 
-#' @param  classifier character list of classification models. See names(TrainAllModels()). 
-#' @param  X.trn,X.val,X.tst matrix of predictors 
-#' @param  Y.trn,Y.val,Y.tst matrix of binary \{0,1\} response variable
-#' @param  varimp (logical) compute variable importance ?
-#' @param  opt.para (logical) tune parameters ?
-#' @param  para named list of model parameters 
-#' @param  return.model (logical) return trained model ?  
-#' @param \dots further arguments passed to or from other methods.
-#' @return \code{TrainModels} returns a list of functions for training various algorithms. Currently 
-#' 7 machine learning algorithms ELR, GLM, GLMnet, RF, GBM, avNNET, and SVM. Others can be easily added. 
-#' \code{Train.Validate.Test} returns a list of performance measures for each classifier traoned:
-#' \item{model}{trained model}
-#' \item{para}{named list of model hyper-paramters (tunned values if opt.para = TRUE)}
-#' \item{run.time}{compute time} 
-#' \item{varimp}{variable importance if classifier is GLM, GBM or RF}
-#' \item{perf}{a list with two data.frames: val.perf and tst.perf containing performance measures 
-#' for validation and test sets }
-
-#' @author  Che Ngufor <Ngufor.Che@@mayo.edu>
-#
-NULL 
-#' @rdname Train 
-#' @export
-#
-TrainModels <- function(...){
-  res = list(
-GLMER = function(trn, tst, form, para, rand.vars, ...){
-  
-      result <- vector("list", length = 3)
-      names(result) <-c("perf.tst", "para", "model") 
-      class(result) <- "GLMER"
-      result$para <- para 			
-
-      result$model <- glmer(form, data=trn,family=binomial,control=glmerControl(optimizer="bobyqa"),nAGQ=0)
-      pp <- predict(result$model, newdata=trn,type="response")
-      thresh <- Performance.measures(pp, trn[, lhs.form(form)])$threshold
-      pp <- predict(result$model, newdata=tst,type="response")      
-      result$perf.tst <- Performance.measures(pp, tst[, lhs.form(form)], threshold = thresh)
-      result      
-}, 
-
-GLMERboost = function(trn, tst, form, para, rand.vars, ...){
-  
-  result <- vector("list", length = 3)
-  names(result) <-c("perf.tst", "para", "model") 
-  class(result) <- "GLMERboost"
-  result$para <- para   		
-  
-  result$model <- glmerLogitBoost(form=form, dat = trn, family = binomial,max.iter = 10, verbose = FALSE)
-  pp <- predict(result$model, newdata=tst)
-  result$perf.tst <- Performance.measures(pp[,2], tst[, lhs.form(form)], threshold = result$model$threshold)
-  result      
-}, 
-
-GBMrules = function(trn, tst, form, para, rand.vars, ...){
-  
-  result <- vector("list", length = 4)
-  names(result) <-c("perf.val", "perf.tst", "para", "model") 
-  class(result) <- "GBMrules"
-  result$para <- para
-  
-  result$model <- MEgbmRules(form = form, dat=trn,  groups = para$groups, rand.vars= rand.vars, para = para,   
-                         tol= 1e-5, max.iter = para$max.iter, include.RE = para$include.RE, 
-                         verbose = FALSE, maxdepth= para$maxdepth, glmer.Control=glmerControl(optimizer = "bobyqa"),
-                         nAGQ = 0, K = para$K, para$decay)    
-  pp <- predict(result$model, newdata=tst)
-  result$perf.tst <- Performance.measures(pp$pred[, 2], tst[, lhs.form(form)], threshold = result$model$threshold)
-  result      
-}, 
-
-MEglmTree = function(X.trn, Y.trn, X.tst, Y.tst, para, rand.vars, part.vars, reg.vars, rhs.vars, ...){
-  
-  result <- vector("list", length = 4)
-  names(result) <-c("perf.val", "perf.tst", "para", "model") 
-  class(result) <- "MEglmTree"
-  result$para <- para
- 
-  result$model <- MEglmTree(X=X.trn, Y=Y.trn, part.vars=part.vars, reg.vars=reg.vars, rand.vars=rand.vars, 
-                            groups=para$groups,include.RE = para$include.RE, max.iter = 
-                              para$max.iter, alpha= para$alpha, minsize=para$minsize, maxdepth= para$maxdepth)    
-  pp <- predict(result$model, newdata=X.tst)
-  result$perf.tst <- Performance.measures(pp[,2], Y.tst, threshold = result$model$threshold)
-  result      
-}, 
-
-MECTree = function(X.trn, Y.trn, X.tst, Y.tst, para, rand.vars, part.vars, reg.vars, rhs.vars, ...){
-  
-  result <- vector("list", length = 4)
-  names(result) <-c("perf.val", "perf.tst", "para", "model") 
-  class(result) <- "MECTree"
-  result$para <- para
-
-  result$model <- MECTree(X=X.trn,Y=Y.trn, con.tree = para$con.tree, rhs.vars=rhs.vars,
-                           rand.vars= rand.vars, groups = para$groups,  max.iter=para$max.iter)    
-  pp <- predict(result$model, newdata=X.tst)
-  result$perf.tst <- Performance.measures(pp[,2], Y.tst, threshold = result$model$threshold)
-  result      
-} 
-)
-res
-}
-
-
-#' @rdname Train 
-#' @export
-#'
 Train.Test <- function(...){
 res = list(
 GLMER = function(trn, tst, para, resp.vars, rand.vars, rhs.vars, reg.vars=NULL, part.vars=NULL, groups, ...){
@@ -262,11 +149,6 @@ if(para$opt.para) {
 return(res)
 }
 
-
-## train-test using longitudinal bootstrap 
-#' @rdname  Train 
-#' @export
-#'
 Train.Boot <- function(classifier, nboots = 2, XY.dat, resp.vars, rhs.vars, part.vars, reg.vars, 
                     para, parallel=TRUE, n.cores = 2, seed=12345678){
 set.seed(seed) 
@@ -324,10 +206,6 @@ res
  ##################################################################
 ############# Tuning by CV concordance for GBM ###################
 ##################################################################
-
-#' @rdname  Train 
-#' @export
-#
 cv.gbm <- function(X, y, outcome=NULL, n.trees=seq(150,500,by=10), interaction.depth, n.minobsinnode = 5, 
 shrinkage=10^(seq(-3,-1,length=10)), bag.fraction = .5, distribution="bernoulli", foldid=NULL, nfolds=10, seed=220, verbose=FALSE){
 

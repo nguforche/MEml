@@ -7,8 +7,6 @@
 \alias{mkNewReTrmsV2}
 \alias{predict.MEglmTree}
 \alias{predict.MEgbm}
-\alias{predict.MEgbmRules}
-\alias{predict.MErfRules}
 \alias{predict.MEmixgbm}
 \alias{predict.MEmixgbm2}
 \title{Predictions for MEml  
@@ -24,10 +22,6 @@ mkNewReTrmsV2(object, newdata, re.form = NULL, na.action = na.pass,
 predict.MEglmTree(object, newdata, type = c("prob", "class")[1], ...)
 
 predict.MEgbm(object, newdata, type = c("prob", "raw")[1], ...)
-
-predict.MEgbmRules(object, newdata, type = c("prob", "class")[1], ...)
-
-predict.MErfRules(object, newdata, type = c("prob", "class")[1], ...)
 
 predict.MEmixgbm(object, newdata, type = c("prob", "class")[1], ...)
 

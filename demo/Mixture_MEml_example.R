@@ -4,6 +4,7 @@ library(gbm)
 library(plyr)
 library(caret)
 library(lme4)
+library(RRF)
 library(inTrees)
 library(ggplot2)
 library(parallel)
@@ -13,6 +14,7 @@ library(kernlab)
 require(flexmix)
 require(gplots)
 require(bayou)
+
 
 ### predict longidutinal profile of left ventricular mass index (increase or normal) 
 ### in  patients undergoing aortic valve surgery.
@@ -53,9 +55,16 @@ para <- list(
   opt.para= TRUE, 
   include.RE = FALSE,
   con.tree = FALSE, 
-  max.iter = 10, alpha=0.05, minsize=20,maxdepth=30,  
+  max.iter = 10, alpha=0.05, 
+  minsize=20,
+  maxdepth=30,
+  
+  glmer.Control = glmerControl(optimizer = "bobyqa"), 
+  likelihoodCheck = TRUE, 
+  nAGQ=0, 
+  
+  decay = 0.05, 
   K = 3, 
-  krange = 2:5,
   tol= 1e-5,
   seed = seed
 )
@@ -86,10 +95,8 @@ rhs.vars <- c("sex",
               "hs")
 
 rand.vars= "time"  ## random effect variables 
-order.vars = "time"
 
-######
-form <- as.formula(paste0(paste0(resp.vars, " ~"), paste0(rhs.vars, collapse = "+"))) 
+##### mixture modeling: generate trajectory subgroups 
 
 model <- MEmixgbm(form = form, dat=dat, groups = id,  rand.vars= rand.vars,  para = para,   
                 max.iter =20, include.RE =FALSE, maxdepth=5, k=3, krange = 2:5, decay = 0.05)
