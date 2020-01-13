@@ -3,7 +3,7 @@ Train_MEml <- function(...){
     MEglm = function(trn, para, resp.vars, rhs.vars, rand.vars, groups, ...){
       form <- as.formula(paste0(paste0(resp.vars, " ~"), paste0(c(paste0(rhs.vars,collapse="+"), "+", "(", 
                                                                   paste0(c(rand.vars),collapse = "+"), "|", groups, ")"), collapse="")))
-      MEglm(form = form, data= trn,family=binomial,control= para$glmer.Control,nAGQ=para$nAGQ)
+      MEglm(form = form, data= trn,control= para$glmer.Control,nAGQ=para$nAGQ)
       
      }, 
     

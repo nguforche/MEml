@@ -1,9 +1,7 @@
-#' @title Predict MEml: MEglm, MEgbm and MErf   
-#' Make predictions using fitted MEml2 mode fpr MEgbm and MErf.
+#' @title Predict MEgbm   
+#' Make predictions for Mixed Effect GBM.
 #
-#' @name predict 
-#
-#' @param object Fitted mode.
+#' @param object Fitted model.
 #' @param newdata A new input data frame.
 #' @param type of prediction: "prop" for probabilities and "class" for class labels.
 #' @param allow.new.levels specifry if new levels of factor variables in the test set should be allowed. Default to FALSE.
@@ -14,10 +12,7 @@
 #
 #' @author  Che Ngufor Ngufor.Che@@mayo.edu
 #' @import rpart partykit Matrix
-#
-NULL 
-#
-#' @name predict     
+
 #' @export 
 predict.MEgbmRules <- function(object, newdata, 
                                type = c("prob", "class")[1], allow.new.levels = FALSE, ...){
@@ -71,7 +66,21 @@ predict.MEgbmRules <- function(object, newdata,
   return(list(Y.star = fitted, pred=pred, predRules = predRules))
 }
 
-#' @name predict     
+#' @title Predict MErf   
+#' Make predictions for Mixed Effect random forest.
+#
+#' @param object Fitted model.
+#' @param newdata A new input data frame.
+#' @param type of prediction: "prop" for probabilities and "class" for class labels.
+#' @param allow.new.levels specifry if new levels of factor variables in the test set should be allowed. Default to FALSE.
+#' @return A list with items 
+#' \item{Y.star}{predicted transformed outcome}
+#' \item{pred}{matrix with predicted class probabilites 
+#' \item{predRules}{predicted rules}
+#
+#' @author  Che Ngufor Ngufor.Che@@mayo.edu
+#' @import rpart partykit Matrix
+
 #' @export 
 predict.MErfRules <- function(object, newdata, 
                               type = c("prob", "class")[1], allow.new.levels=FALSE, ...){
@@ -133,7 +142,21 @@ predict.MErfRules <- function(object, newdata,
   return(list(Y.star = fitted, pred=pred, predRules = predRules))
 }
 
-#' @name predict     
+#' @title Predict MEglm  
+#' Make predictions for Mixed Effect logistic regression. This is just a wrapper for \code{predict.merMod} in lme4 .
+#
+#' @param object Fitted model.
+#' @param newdata A new input data frame.
+#' @param type of prediction: "prop" for probabilities and "class" for class labels.
+#' @param allow.new.levels specifry if new levels of factor variables in the test set should be allowed. Default to FALSE.
+#' @return A list with items 
+#' \item{Y.star}{NULL}
+#' \item{pred}{matrix with predicted class probabilites 
+#' \item{predRules}{NULL}
+#
+#' @author  Che Ngufor Ngufor.Che@@mayo.edu
+#' @import rpart partykit Matrix
+
 #' @export 
 predict.MEglm<- function(object, newdata, 
                               type = c("prob", "class")[1], allow.new.levels=FALSE, ...){

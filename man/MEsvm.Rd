@@ -6,17 +6,14 @@
 \usage{
 MEsvm(form, dat, groups = NULL, rand.vars = "1", para = NULL,
   tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, decay = 0.05, ...)
-
-MEsvm(form, dat, groups = NULL, rand.vars = "1", para = NULL,
-  tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, decay = 0.05, ...)
+  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa"),
+  nAGQ = 0, likelihoodCheck = TRUE, K = 3, decay = 0.05, ...)
 }
 \arguments{
+\item{form}{formula}
+
+\item{dat}{data.frame with predictors}
+
 \item{groups}{character name of the column containing the group identifier}
 
 \item{rand.vars}{random effect variables}
@@ -34,12 +31,6 @@ MEsvm(form, dat, groups = NULL, rand.vars = "1", para = NULL,
 \item{likelihoodCheck}{(logical) to use log likelihood of glmer to check for convergence?}
 
 \item{\dots}{Further arguments passed to or from other methods.}
-
-\item{X}{data.frame with predictors}
-
-\item{Y}{binary response vector}
-
-\item{gbm.dist}{gbm loss function}
 
 \item{lme.family}{glmer control}
 

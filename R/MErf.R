@@ -1,10 +1,12 @@
+#' @export
+MErfRules  <- function(X, ...) UseMethod("MErfRules")
+
+
 #' @title Mixed Effect random forest  
 #' @description 
 #' Trains a Mixed Effect random forest 
 #' for longitudinal continuous, binary and count data. A rule based version or these methods 
 #' using the \code{inTree} package is also implemented(see [1])  
-
-#' @name MErf
 
 #' @param form formula  
 #' @param dat  data.frame with predictors 
@@ -43,21 +45,23 @@
 #' in Journal of Biomedical Informatics, 2018 
 
 #' @import lme4 caret partykit inTrees 
-NULL 
-#
-#
-#' @rdname MErf  
+
+
 #' @export
-MErfRules  <- function(X, ...) UseMethod("MErfRules")
-#
-#' @rdname MErf 
-#' @export
-#
-MErfRules <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,   
-                      tol= 1e-5, max.iter =100, include.RE =FALSE, verbose = FALSE, maxdepth=5,
-                      glmer.Control=glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-                      nAGQ=0, likelihoodCheck = TRUE,
-                      K=3, decay = 0.05, ...){
+MErfRules <- function(form, 
+                      dat,  
+                      groups = NULL, 
+                      rand.vars="1", 
+                      para = NULL,   
+                      tol= 1e-5, 
+                      max.iter =100, 
+                      include.RE =FALSE, 
+                      verbose = FALSE, maxdepth=5,
+                      glmer.Control=glmerControl(optimizer = "bobyqa"), 
+                      nAGQ=0, 
+                      likelihoodCheck = TRUE,
+                      K=3, 
+                      decay = 0.05, ...){
   
   
   if(is.null(groups)) stop("please provide grouping variable")

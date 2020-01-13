@@ -2,32 +2,13 @@
 % Please edit documentation in R/MEmixgbm.R
 \name{MEmixgbm}
 \alias{MEmixgbm}
-\alias{MEmixgbm2}
 \title{Mixture of Mixed Effect GBM}
 \usage{
 MEmixgbm(form, dat, groups = NULL, rand.vars = "1", para = NULL,
   tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, krange = 2:5, decay = 0.05, ...)
-
-MEmixgbm(form, dat, groups = NULL, rand.vars = "1", para = NULL,
-  tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, krange = 2:5, decay = 0.05, ...)
-
-MEmixgbm2(form, dat, groups = NULL, rand.vars = "1", para = NULL,
-  tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, krange = 2:5, decay = 0.05, ...)
-
-MEmixgbm2(form, dat, groups = NULL, rand.vars = "1", para = NULL,
-  tol = 1e-05, max.iter = 100, include.RE = FALSE, verbose = FALSE,
-  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa",
-  check.nobs.vs.nRE = "ignore", check.nobs.vs.nlev = "ignore"), nAGQ = 0,
-  likelihoodCheck = TRUE, K = 3, krange = 2:5, decay = 0.05, ...)
+  maxdepth = 5, glmer.Control = glmerControl(optimizer = "bobyqa"),
+  nAGQ = 0, likelihoodCheck = TRUE, K = 3, krange = 2:5,
+  decay = 0.05, ...)
 }
 \arguments{
 \item{groups}{character name of the column containing the group identifier}

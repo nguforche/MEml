@@ -1,9 +1,10 @@
+#' @export
+MEmixgbm  <- function(X, ...) UseMethod("MEmixgbm")
+
 #' @title Mixture of Mixed Effect GBM 
 #' @description 
 #' Trains a Mixed Effect gradient boosted machine where the random effects are assumed to follow a 
 #' mixture of gaussian distribution.    
-
-#' @name MEmixgbm
 
 #' @param X  data.frame with predictors 
 #' @param Y  binary response vector 
@@ -42,16 +43,8 @@
 #' in Journal of Biomedical Informatics, 2018 
 
 #' @import lme4 caret inTrees gbm flexmix
-NULL 
-#
-#
-#' @rdname MEmixgbm  
 #' @export
-MEmixgbm  <- function(X, ...) UseMethod("MEmixgbm")
-#
-#' @rdname MEmixgbm 
-#' @export
-#
+
 MEmixgbm <- function(form, dat,  
                      groups = NULL, 
                      rand.vars="1", 
@@ -61,7 +54,7 @@ MEmixgbm <- function(form, dat,
                      include.RE =FALSE, 
                      verbose = FALSE, 
                      maxdepth=5,
-                     glmer.Control=glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
+                     glmer.Control=glmerControl(optimizer = "bobyqa"), 
                      nAGQ=0, likelihoodCheck = TRUE,
                      K=3, 
                      krange = 2:5,
@@ -278,13 +271,15 @@ MEmixgbm <- function(form, dat,
 
 
 
-#' @rdname MEmixgbm  
 #' @export
 MEmixgbm2  <- function(X, ...) UseMethod("MEmixgbm2")
 #
-#' @rdname MEmixgbm 
+#' @title Mixture of Mixed Effect GBM (version 2)
+#' @description 
+#' Trains a Mixed Effect gradient boosted machine where the random effects are assumed to follow a 
+#' mixture of gaussian distribution (I am not sure what the difference between MEmixgbm and MEmixgbm2 was!).    
+
 #' @export
-#
 MEmixgbm2 <- function(form, dat,  
                      groups = NULL, 
                      rand.vars="1", 

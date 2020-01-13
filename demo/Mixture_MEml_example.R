@@ -14,7 +14,7 @@ library(kernlab)
 require(flexmix)
 require(gplots)
 require(bayou)
-
+require(PresenceAbsence)
 
 ### predict longidutinal profile of left ventricular mass index (increase or normal) 
 ### in  patients undergoing aortic valve surgery.

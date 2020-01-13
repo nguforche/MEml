@@ -1,11 +1,13 @@
+#' @export
+MEgbmRules  <- function(X, ...) UseMethod("MEgbmRules")
+
+
 #' @title Mixed Effect GBM 
 #' @description 
 #' Trains a Mixed Effect gradient boosted machine  
 #' for longitudinal continuous, binary and count data. A rule based version or these methods 
 #' using the \code{inTree} package is also implemented(see [1])  
   
-#' @name MEgbm
-
 #' @param form formula  
 #' @param dat  data.frame with predictors 
 #' @param groups character name of the column containing the group identifier
@@ -41,23 +43,23 @@
 #' Che Ngufor,  Holly Van Houten, Brian S. Caffo , Nilay D. Shah, Rozalina G. McCoy 
 #' Mixed Effect Machine Learning: a framework for predicting longitudinal change in hemoglobin A1c,
 #' in Journal of Biomedical Informatics, 2018 
-
 #' @import lme4 caret partykit inTrees gbm
-NULL 
-#
-#
-#' @rdname MEgbm  
+#' 
 #' @export
-MEgbmRules  <- function(X, ...) UseMethod("MEgbmRules")
-#
-#' @rdname MEgbm 
-#' @export
-#
-MEgbmRules <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,   
-                       tol= 1e-5, max.iter =100, include.RE =FALSE, verbose = FALSE, maxdepth=5,
-                       glmer.Control= glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-                       nAGQ=0, likelihoodCheck = TRUE,
-                       K=3, decay = 0.05, ...){
+MEgbmRules <- function(form, dat,  
+                       groups = NULL, 
+                       rand.vars="1", 
+                       para = NULL,   
+                       tol= 1e-5, 
+                       max.iter =100, 
+                       include.RE =FALSE, 
+                       verbose = FALSE, 
+                       maxdepth=5,
+                       glmer.Control= glmerControl(optimizer = "bobyqa"), 
+                       nAGQ=0, 
+                       likelihoodCheck = TRUE,
+                       K=3, 
+                       decay = 0.05, ...){
     
   if(is.null(groups)) stop("please provide grouping variable")
   rhs.vars <- rhs.form(form)

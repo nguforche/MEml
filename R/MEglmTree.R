@@ -1,8 +1,12 @@
+#' @export
+MEglmTree  <- function(X, ...) UseMethod("MEglmTree")
+
+
+#' @title Mixed Effect Model Based Trees 
+#' @description 
 #' Trains a Mixed Effect Model Based Recursive partitioning and Mixed Effect 
 #'  classification trees for longitudinal continuous, binary and count data. 
 #'  These functions can be called directly and more efficiently by the functions \code{MEml} and \code{MEml.lag} 
-#'#  
-#' @name MEglmTree 
 #
 #' @param X  data.frame with predictors 
 #' @param Y  binary response vector 
@@ -51,27 +55,25 @@
 #
 #' @author  Che Ngufor <Ngufor.Che@@mayo.edu>
 #' @import lme4 caret rpart partykit 
-NULL 
-#
-#' @rdname MEglmTree 
+
 #' @export
-MEglmTree  <- function(X, ...) UseMethod("MEglmTree")
-#'#
-#' @rdname MEglmTree 
-#' @export
-#' @examples
-#' \dontrun{
-#' set.seed(12345)
-#' mod <- MEMOBTree(form, rand.form, data)) 
-#'#
-#' }
-#
-MEglmTree <- function(X, Y, part.vars, reg.vars = "1", rand.vars="1",  
-                groups = NULL, initialRandomEffects=rep(0, nrow(X)), 
-                initialProbs = rep(0.5, nrow(X)),  tol= 1e-5, max.iter =100, 
-                include.RE = TRUE, verbose=FALSE, likelihoodCheck = TRUE, 
-                glmer.Control=glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-                nAGQ=0, alpha = 0.05, minsize = 20, maxdepth=50, para = NULL,  ...){
+MEglmTree <- function(X, 
+                      Y, 
+                      part.vars, reg.vars = "1", rand.vars="1",  
+                groups = NULL, 
+                initialRandomEffects=rep(0, nrow(X)), 
+                initialProbs = rep(0.5, nrow(X)),  
+                tol= 1e-5, 
+                max.iter =100, 
+                include.RE = TRUE, 
+                verbose=FALSE, 
+                likelihoodCheck = TRUE, 
+                glmer.Control=glmerControl(optimizer = "bobyqa"), 
+                nAGQ=0, 
+                alpha = 0.05, 
+                minsize = 20, 
+                maxdepth=50, 
+                para = NULL,  ...){
      if(is.null(groups)) stop("please provide grouping variable")
      Y <- as.vector(Y) 
      dat <- cbind.data.frame(response = Y, X)   
@@ -155,8 +157,14 @@ for(ii in 1:max.iter){
 # 	  
 	  form <- as.formula(paste0(paste0("Target", " ~"), paste0(part.vars, collapse = "+")))
 	  
-	  gbmfit <-  train(form,  data = newdata, method = "gbm", trControl = trainControl(method = "none"),  
-	                   verbose = FALSE, tuneGrid = data.frame(n.trees = para$n.trees, interaction.depth=para$interaction.depth, 
+	  gbmfit <-  train(form,  
+	                   data = newdata, 
+	                   method = "gbm", 
+	                   trControl = trainControl(method = "none"),  
+	                   verbose = FALSE, 
+	                   tuneGrid = data.frame(n.trees = 
+	                                           para$n.trees, 
+	                                         interaction.depth=para$interaction.depth, 
                            shrinkage=para$shrinkage, n.minobsinnode=para$n.minobsinnode))   
 	  zz = predict(gbmfit, newdata = newdata, type = "raw")	
 
@@ -219,9 +227,13 @@ for(ii in 1:max.iter){
  if(width(tree) <= 1){
    warning("Tree with one node encounnted: Using gbm !")
    form <- as.formula(paste0(paste0("Target", " ~"), paste0(part.vars, collapse = "+")))
-   gbmfit <-  train(form,  data = newdata, method = "gbm", trControl = trainControl(method = "none"),  
-                    verbose = FALSE, tuneGrid = data.frame(n.trees = para$n.trees, 
-                    interaction.depth=para$interaction.depth, shrinkage=para$shrinkage, n.minobsinnode=para$n.minobsinnode))   
+   gbmfit <-  train(form,  data = newdata, method = "gbm", 
+                    trControl = trainControl(method = "none"),  
+                    verbose = FALSE, 
+                    tuneGrid = data.frame(n.trees = para$n.trees, 
+                    interaction.depth=para$interaction.depth, 
+                    shrinkage=para$shrinkage, 
+                    n.minobsinnode=para$n.minobsinnode))   
     zz = predict(gbmfit, newdata = newdata, type = "raw")
    
   } else 
@@ -242,34 +254,103 @@ for(ii in 1:max.iter){
   	tab <- cbind(Est = fixef(glmer.fit), LL = fixef(glmer.fit) - 1.96 * se, 
   	UL = fixef(glmer.fit) + 1.96 *se)
 
-res <- list(tree.fit = tree, glmer.fit = glmer.fit, part.vars=part.vars, groups = groups, 
-          reg.vars = reg.vars, rand.vars=rand.vars, logLik=as.numeric(logLik(glmer.fit)), 
-         random.effects =ranef(glmer.fit), form = mob.form, rand.form = form.glmer, 
-         glmer.Control=	glmer.Control, glmer.CI =tab, fitted.probs = pp, 
-         fitted.class = cls, train.perf = perf, threshold = threshold, include.RE=include.RE, gbmfit = gbmfit)
+res <- list(tree.fit = tree, 
+            glmer.fit = glmer.fit, 
+            part.vars=part.vars, 
+            groups = groups, 
+          reg.vars = reg.vars, 
+          rand.vars=rand.vars, 
+          logLik=as.numeric(logLik(glmer.fit)), 
+         random.effects =ranef(glmer.fit), 
+         form = mob.form, 
+         rand.form = form.glmer, 
+         glmer.Control=	glmer.Control, 
+         glmer.CI =tab, 
+         fitted.probs = pp, 
+         fitted.class = cls, 
+         train.perf = perf, 
+         threshold = threshold, 
+         include.RE=include.RE, 
+         gbmfit = gbmfit)
 class(res) <- "MEglmTree"         
 res         
 }
 #
-#' @rdname MEglmTree  
+  
 #' @export
 ###### Mixed effect conditional inference trees 
 MECTree  <- function(X, ...) UseMethod("MECTree")
 #
-#' @rdname MEglmTree 
-#' @export
-#' @examples
-#' \dontrun{
-#' set.seed(12345)
-#' mod <-MECTree(fix.form, rand.form, data)) 
-#'
-#' }
+
+#' @title Mixed Effect Conditional Inference Trees  
+#' @description 
+#' Trains a Mixed Effect Model for conditional inference trees  
 #
-MECTree <- function(X, Y, con.tree = FALSE, rhs.vars,  rand.vars="1",  
-                groups = NULL, tol= 1e-5, max.iter =100, verbose=FALSE, 
-                likelihoodCheck = TRUE,glmer.Control = glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", check.nobs.vs.nlev="ignore"), 
-                nAGQ=0, cv = TRUE, cpmin=0.0001, minsplit = 50, minbucket = 10, 
-                no.SE =1, mincriterion = 0.975, maxdepth=30, stump = FALSE,...){					
+#' @param X  data.frame with predictors 
+#' @param Y  binary response vector 
+#' @param part.vars,rhs.vars partitioning variables for MOB and predictors 
+#' @param reg.vars regressors for MOB 
+#' @param rand.vars random effect variables 
+#' @param groups  character name of the column containing the group identifier 
+#' @param initialRandomEffects  [0] a vector of initial values for random effects
+#' @param initialProbs [0.5]  a vector of initial conditional probabilites of success  
+#' @param tol convergence tolerance 
+#' @param max.iter maximum number of iteration for the EM algorithm 
+#' @param likelihoodCheck logical: should the likelihood of random effect model be used to check for convergence?  
+#' @param verbose logical for printing intermediate trees results 
+#' @param include.RE include random effects in glmtree model part?
+#' @param con.tree do conditional inference trees instead of rpart?
+
+### These options pertain to the \code{\link[rpart]{rpart} part of estimation
+#' @param cv [TRUE] - Should cross-validation be used?
+#' @param cpmin [0.0MEBoostedTree001] - complexity parameter used in building a tree before cross-validation
+#' @param no.SE [0] - number of standard errors used in pruning (0 if unused)
+#' @param minsize,maxdepth,minsplit,minbucket,mincriterion,stump see rpart
+
+#' @param alpha stability parameter in glmtree 
+### These options pertain to the \code{\link[lme4]{glmer}} part of estimation
+#' @param glmer.Control same as \code{\link[lme4]{glmerControl}} - glmer controls, 
+#' default to glmerControl(optimizer = "bobyqa")] 
+#' @param nAGQ  as in \code{\link[lme4]{glmer}}, default to 10 
+#'		with maximum likelihood or restricted maximum likelihood
+#' @param \dots Further arguments passed to or from other methods.
+#' @return An object of class \code{MECTree}; a list with items 
+#' \item{tree.fit}{fitted classification trees model}
+#' \item{glmer.fit}{fitted mixed effect logistic regression model}
+#' \item{logLik}{log likelihood of mixed effect logistic regression} 
+#' \item{random.effects}{random effect parameter estimates}
+#' \item{form}{modified formula for fitted classification trees model}
+#' \item{rand.form}{modified formula for random effects} 
+#' \item{glmer.Control}{glmer controls}
+#' \item{tree.control}{rpart controls}
+#' \item{glmer.CI}{estimates of mixed effect logistic regression with 
+#'     approximate confidence intervals on the logit scale. More accurate values 
+#'     can be obtained by bootstrap}
+#' \item{fitted.probs}{fitted probabilites for final model}
+#' \item{fitted.class}{fitted class labels for final model}
+#' \item{train.perf}{various performance measures for final model on training set}
+#' \item{threshold}{classification cut-off}
+
+MECTree <- function(X, 
+                    Y, 
+                    con.tree = FALSE, 
+                    rhs.vars,  
+                    rand.vars="1",  
+                    groups = NULL, 
+                    tol= 1e-5, 
+                    max.iter =100, 
+                    verbose=FALSE, 
+                    likelihoodCheck = TRUE,
+                    glmer.Control = glmerControl(optimizer = "bobyqa"), 
+                    nAGQ=0, 
+                    cv = TRUE, 
+                    cpmin=0.0001, 
+                    minsplit = 50, 
+                    minbucket = 10, 
+                    no.SE =1, 
+                    mincriterion = 0.975, 
+                    maxdepth=30, 
+                    stump = FALSE,...){					
 
 	if(is.null(groups)) stop("please provide grouping variable")
 	Y <- as.vector(Y) 

@@ -1,14 +1,15 @@
+#' @export
+MEsvm  <- function(X, ...) UseMethod("MEsvm")
+
+
 #' @title Mixed Effect support vector machine
 #' @description 
 #' Train a Mixed Effect support vector machine for binary outcome. 
 
-#' @name MEsvm
-
-#' @param X  data.frame with predictors 
-#' @param Y  binary response vector 
+#' @param form formula 
+#' @param dat data.frame with predictors 
 #' @param groups character name of the column containing the group identifier
 #' @param rand.vars random effect variables 
-#' @param gbm.dist gbm loss function   
 #' @param para named list of gbm training parameters 
 #' @param lme.family glmer control 
 #' @param tol convergence tolerance 
@@ -42,22 +43,21 @@
 #' in Journal of Biomedical Informatics, 2018 
 
 #' @import lme4 caret 
-NULL 
-#
-#' @rdname MEsvm  
 #' @export
-MEsvm  <- function(X, ...) UseMethod("MEsvm")
-#
-#' @rdname MEsvm 
-#' @export
-#
-MEsvm <- function(form, dat,  groups = NULL, rand.vars="1", para = NULL,   
-                       tol= 1e-5, max.iter =100, include.RE =FALSE, 
-                       verbose = FALSE, maxdepth=5,
-                       glmer.Control=glmerControl(optimizer = "bobyqa",check.nobs.vs.nRE="ignore", 
-                       check.nobs.vs.nlev="ignore"), 
-                       nAGQ=0, likelihoodCheck = TRUE,
-                       K=3, decay = 0.05, ...){
+MEsvm <- function(form, 
+                  dat,  
+                  groups = NULL, 
+                  rand.vars="1", 
+                  para = NULL,   
+                  tol= 1e-5, 
+                  max.iter =100, 
+                  include.RE =FALSE, 
+                  verbose = FALSE, maxdepth=5,
+                  glmer.Control=glmerControl(optimizer = "bobyqa"), 
+                  nAGQ=0, 
+                  likelihoodCheck = TRUE,
+                  K=3, 
+                  decay = 0.05, ...){
   
   if(is.null(groups)) stop("please provide grouping variable")
   rhs.vars <- rhs.form(form)

@@ -1,36 +1,10 @@
-#' Utility functions: 
-# 
-#' Some useful miscellaneous functions: plot plot.MECTree plot the 
-#' tree part of MECTree object; heat.tree plot a sort of heat map decision trees 
+# Utility functions: 
+
+#' @title collect gabbage 
 #
-#' @name Utils
-#
-#' @param dat data.frame 
-#' @param id group id 
-#' @param threshold threshold 
-#' @param order.vars variables to order longitudinal data 
-#' @param cut.off,propo  cut-off and proportions 
-#' @param no.last number of tail observations that goes into test set 
-#' @param resp.vars,rhs.vars response and vector of predictor names 
-#' @param pred,obs predicted probabilities and true class 
-#' @param y,f,nl.n numeric or character vector depending on usage 
-#' @param allow.new.levels logical 
-#' @param lag lag in train test split 
-#' @param formula formula 
-#' @param \dots Further arguments passed to or from other methods.
-# 
-#' @author  Che Ngufor Ngufor.Che@@mayo.edu
-#' @import rpart.plot partykit Matrix 
- 
-#' @importFrom PresenceAbsence optimal.thresholds
-#' @importFrom PresenceAbsence presence.absence.accuracy
-#' @importFrom PresenceAbsence predicted.prevalence
-#' @importFrom plyr dlply
-#' @importFrom caret confusionMatrix
-#' @importFrom DMwR regr.eval
-# 
-NULL 
-#
+#' @description
+#' Collects garbage until the memory is clean
+#' @export
 collect.garbage = function(){
   #if (exists("collect.garbage") ) rm(collect.garbage)
   ## The following function collects garbage until the memory is clean.
@@ -59,7 +33,7 @@ cprod <- function(x,y=NULL){
 safeDeparse <- function(x, collapse=" ") paste(deparse(x, 500L), collapse=collapse)
 
 #
-#' @rdname Utils
+
 # Random Effects formula only
 reOnly <- function(f) {
     reformulate(paste0("(", vapply(findbars(f), safeDeparse, ""), ")"))
@@ -86,10 +60,16 @@ levelfun <- function(x,nl.n,allow.new.levels=FALSE) {
     }
     return(x)
 }
+
 ######################################################################################
-#################  Train-Test split longitdinal data: train data lags test data by lag 
+#################  Train-Test split longitudinal data: train data lags test data by lag 
 #################  there must be at least 2 visit times for each observation 
-#' @rdname  Utils
+#' @title  Train-Test  longitudinal data split
+#
+#' @description
+#' Split longitudinal data into training and test set, where the training set lags the 
+#' test set by an amount "lag". e.g predict an outcome at lag=x hospital visits in advanced.  
+#' There must be at least 2 repeated measurements for each unit 
 #' @export
 LongiLagSplit <- function(dat, id, rhs.vars, resp.vars, order.vars = "time", lag=1){ 
 
@@ -120,8 +100,6 @@ LongiLagSplit <- function(dat, id, rhs.vars, resp.vars, order.vars = "time", lag
 }    
 
 ##### do not split into training and testing 
-#' @rdname  Utils
-#' @export
 LongiLagSplit.boot <- function(dat, id, rhs.vars, resp.vars, order.vars = "time", lag=1){ 
 
   tab <- data.frame(table(dat[, id]))
@@ -147,8 +125,6 @@ LongiLagSplit.boot <- function(dat, id, rhs.vars, resp.vars, order.vars = "time"
 #### Always predict the next or last visit, i.e use all repeated measure seen so far and predict the next possible one 
 ### i.e for visit =1 (next visit) data = (x0, y1), (x1, y2), .....
 ### visit = 2 data (x1, y2), (x2, y3), .... so y0, and y1 must be available before this will work 
-#' @rdname  Utils
-#' @export
 LongiLagSplit.visit <- function(dat, id, rhs.vars, resp.vars, order.vars = "time", visit=1){ 
   
   tab <- data.frame(table(dat[, id]))
@@ -176,9 +152,7 @@ LongiLagSplit.visit <- function(dat, id, rhs.vars, resp.vars, order.vars = "time
   list(train = train, test = test, resp.vars = "response", rhs.vars = c(rhs.vars, resp.vars))
 }    
 
-###### do not split into training and testing 
-#' @rdname  Utils
-#' @export
+
 LongiLagSplit.visit.boot <- function(dat, id, rhs.vars, resp.vars, order.vars = "time", visit=1, parallel=TRUE){ 
   
   tab <- data.frame(table(dat[, id]))
@@ -224,9 +198,18 @@ rhs.vars <- c("past.HbA1c", rhs.vars[rhs.vars!=resp.vars])
 list(dd = X, resp.vars = "response", rhs.vars = rhs.vars)
 }    
 
-#' @rdname  Utils 
+
+
+#' @title  Performance measures 
+#
+#' @description
+#' Compute accuracy, AUC, sensitivity, specificity, positive predictive values, etc. 
+#' @param pred  predicted probabilities 
+#' @param obs  true class 
+#' @param threshold class probability threshold (default to NULL)
+#' @param prevalence class prevalence in the population (default to NULL)
+# 
 #' @export
-## performance measures 
 Performance.measures <- function(pred, obs, threshold=NULL, prevalence=NULL){
 if(length(unique(obs)) == 2) {
 obs <- as.numeric(factor(obs))-1 
@@ -277,8 +260,26 @@ rhs.form <- function(formula) {
     response <- attr(tt, "response") # index of response var
     vars[-response] 
 }
-#' @rdname  Utils
-#' @export
+
+
+#' @title Optimal threshold
+#
+#' @description
+#' Compute the the optimal classification threshold
+#'
+#' @param prob Predicted probabilities by a classifier
+#' @param obs ground truth (correct) 0-1 labels vector
+#' @param opt.method  optima classifcation threshold method see package \code{PresenceAbsence}. Default 
+#'  is the minRoc distance: i.e the threshold value at the minimum distance between the ROC curve and the 
+#' to left hand corner (0,1)
+#' @return threhold 
+#' @examples
+#' data(cars)
+#' logreg <- glm(formula = vs ~ hp + wt,
+#'               family = binomial(link = "logit"), data = mtcars)
+#' prob <- logreg$fitted.values
+#' opt.thresh(prob = pob, obs = mtcars$vs) 
+#' @export 
 opt.thresh <- function(pred, obs){
 thresh = 0.5 
 if(length(unique(obs)) > 1){
@@ -375,7 +376,7 @@ mapLabels <- function (pred, splitV)
 newV
 }  
 
-#' @rdname  Utils
+
 sparseFactor <- function (dummy, thresh = 0.00016) 
 {
   nme <- FALSE     
@@ -418,51 +419,7 @@ sortImp <- function (object, top)
   out
 }
 
-#' @rdname  Utils
-#' @export
-VimPlot <- function (x, top = min(20, length(x$importance)), ...) 
-{
-  varSubset <- sortImp(x, top)
-  plotObj <- stack(varSubset)
-#   op <- par(mfrow = c(1, 2), mar = c(4, 5, 4, 1), mgp = c(2, 
-#                                                           0.8, 0), oma = c(0, 0, 2, 0), no.readonly = TRUE)
-#   on.exit(par(op))
-  
-  if (dim(varSubset)[2] == 1) {
-    plotObj <- varSubset
-    names(plotObj) <- "values"
-    plotObj$ind <- "Overall"
-  }
-  else plotObj <- stack(varSubset)
-  plotObj$Var <- rep(rownames(varSubset), dim(varSubset)[2])
-  plotObj$Var <- factor(plotObj$Var, levels = rev(rownames(varSubset)))
-  if (dim(varSubset)[2] < 3) {
-    if (dim(varSubset)[2] > 1) 
-      plotObj <- plotObj[plotObj$ind == levels(plotObj$ind)[1], ]
-    #            out <- dotplot(Var ~ values, data = plotObj, as.table = TRUE,  xlab = "Importance", cex = 1.5, cex.labels = 1.5, pch=21, ...)
-#    par(mai = c(1.360, 10.5, 1.093, 0.2))  
-    par(oma=c(2,1,1,1))
-    out <- dotchart2(data=plotObj$values, labels=plotObj$Var, horizontal=TRUE, pch=19,col = "blue", 
-                     xlab="Importance", ylab="Variables", lty=1, lines=TRUE, dotsize = 1.1,
-                     cex = 1.3, cex.labels = 0.9, sort.=FALSE, add=FALSE, xaxis=TRUE, width.factor=.8,
-                     lcolor='gray', leavepar=FALSE, ...)
-    par()			    
-    #            out <- dotchart(plotObj$values, labels=plotObj$Var,  xlab = "Importance", ylab="Variables", lty=1, ...)
-  }
-  else {
-   par( mai = c(1.360, 3.5, 1.093, 0.560))  
-    out <- dotplot(Var ~ values, data = plotObj, groups = plotObj$ind, 
-                   auto.key = list(columns = min(3, length(levels(plotObj$ind)))), 
-                   as.table = TRUE, xlab = "Importance", ...)
-    par()
-  }
-  out
-}
 
-
-#
-#' @rdname  Utils
-#' @export
 varImpPlot.RF <- function (x, sort = TRUE, n.var = min(30, nrow(x$importance)), 
           type = NULL, class = NULL, scale = TRUE, main = "", xlab = "", ...) 
 {
@@ -582,9 +539,7 @@ rownames(tst) <- NULL
 list(trn = trn, tst=tst)
 } 
 
-#
-#' @rdname Utils
-#' @export
+
 createBootSamples <- function (y, times = 10, replace = TRUE, prob = NULL) {        
     trainIndex <- matrix(0, ncol = times, nrow = length(y))
     out <- apply(trainIndex, 2, function(data) {
@@ -597,7 +552,6 @@ createBootSamples <- function (y, times = 10, replace = TRUE, prob = NULL) {
 }
 
 
-#' @rdname Utils
 multiClassSummary <- function (data, class.names=NULL, eps = 1e-15){  
   #Check data
 #  if (!all(levels(data[, "pred"]) == levels(data[, "obs"]))) 
@@ -646,10 +600,16 @@ names(prob_stats) <- c('ROC', 'logLoss')
 }
 
 
-
-
-#' @rdname  Utils
+#' @title normalize data
+#
+#' @description
+#' Normalize matrix or data frame to the min-max range of the variables.
+#
+#' @param x  matrix or data frame 
+#' @return nomalized matrix/data frame with min and max of each variable as attributes 
 #' @export
+# normalize data to 
+
 normalize <- function(x) { 
   x <- as.matrix(x)
   minAttr=apply(x, 2, min, na.rm=TRUE)
@@ -667,8 +627,17 @@ normalizeMinusOneToOne <- function(x, a = -1, b = 1) {
   (((x - A)*(b-a))/(B-A) + a)
 } 
 
-#' @rdname  Utils
+#' @title denomalize data 
+#
+#' @description 
+#' tranform normalized data back to original scale  
+#
+#' @param  normalized  the normalized data frame/matrix 
+#' @param  min,max the min and max of each variable in the data. This can be otained by retrieving the attribute values of 
+#' the normalized data, i.e. output of \code{normalize}
 #' @export
+# denormalize back to original scale
+
 # denormalize back to original scale
 denormalize <- function (normalized, min, max) {
   if(dim(normalized)[2]!= length(min)) stop("length of min or max must equal number of columns of data ")
@@ -678,35 +647,8 @@ denormalize <- function (normalized, min, max) {
 }
 
 
-#' @rdname  Utils
-#' @export
-# get results with confidence intervals 
-getResults.ci <- function(tab, alpha = 0.05){
 
-nme <- c("PCC", "AUC",  "sensitivity",  "specificity", "F.measure", "G.mean", "BER", "PPV")
-mn = ddply(tab, .variables = c("Lag", "Classifier"), numcolwise(mean), na.rm = TRUE)[, c("Lag", "Classifier", nme)]
-ci  <-   ddply(tab, .variables =c( "Lag","Classifier"), numcolwise(quantile), probs = c(alpha/2, 1-alpha/2), na.rm = TRUE)[,c("Lag", "Classifier", nme)]
- 
-mn[, nme] <- format(round(mn[, nme], 2), nsmall = 2) 
-ci[, nme] <- format(round(ci[, nme], 2), nsmall = 2) 
 
-### split by lag, identify each classifier and merge 
-df <- do.call(rbind.data.frame, lapply(unique(mn$Lag), function(lag){
-xx <- mn[mn$Lag == lag, ]
-yy <- ci[ci$Lag == lag, ]
-t(sapply(unique(xx$Classifier), function(ii){
-x <- xx[xx$Classifier == ii, ]
-y <- yy[yy$Classifier == ii, ]
-tb <- cbind.data.frame(lag, as.character(ii), t(as.character(paste0(paste0(paste0(paste0(paste0(x[1, nme], "(" ),  y[1, nme]), ","), y[2, nme]), ")"))))
-colnames(tb) <- c("Lag", "Classifier", nme)
-tb 
-}))
-}))
-df
-}
-
-#' @rdname  Utils
-#' @export
 ############################################################
 ######## 2. F-score ########################################
 ############################################################
@@ -762,7 +704,121 @@ F.measure.single <- function(pred,labels) {
 
 
 
+################################################################################
+################################################################################
+#################### predict method for mixed effect model based tree 
+################ create a new mixed effect model frame 
+## Make new random effect terms from specified object and new data,
+## possibly omitting some random effect terms
+## @param object fitted model object
+## @param newdata (optional) data frame containing new data
+## @param re.form,allow.new.levels formula specifying random effect terms to include (NULL=all, ~0)
+#
+## @note Hidden; _only_ used (twice) in this file
+mkNewReTrms <- function(object, newdata, re.form = NULL,  allow.new.levels=FALSE)
+{
+  ## construct (fixed) model frame in order to find out whether there are
+  ## missing data/what to do about them
+  ## need rfd to inherit appropriate na.action; need grouping
+  ## variables as well as any covariates that are included
+  ## in RE terms
+  if (is.null(newdata)) 
+    rfd <- model.frame(object)
+  else 
+    rfd <- newdata
+  
+  ## note: mkReTrms automatically *drops* unused levels
+  ReTrms <- mkReTrms(findbars(re.form[[2]]), rfd)
+  ## update Lambdat (ugh, better way to do this?)
+  ReTrms <- within(ReTrms,Lambdat@x <- unname(getME(object,"theta")[Lind]))
+  if (!allow.new.levels && any(vapply(ReTrms$flist, anyNA, NA)))
+    stop("NAs are not allowed in prediction data",
+         " for grouping variables unless allow.new.levels is TRUE")
+  ns.re <- names(re <- ranef(object))
+  nRnms <- names(Rcnms <- ReTrms$cnms)
+  if (!all(nRnms %in% ns.re))
+    stop("grouping factors specified in re.form that were not present in original model")
+  new_levels <- lapply(ReTrms$flist, function(x) levels(factor(x)))
+  ## fill in/delete levels as appropriate
+  re_x <- Map(function(r,n) levelfun(r,n,allow.new.levels=allow.new.levels),
+              re[names(new_levels)], new_levels)
+  ## pick out random effects values that correspond to
+  ##  random effects incorporated in re.form ...
+  ## NB: Need integer indexing, as nRnms can be duplicated: (age|Subj) + (sex|Subj) :
+  re_new <- lapply(seq_along(nRnms), function(i) {
+    rname <- nRnms[i]
+    if (!all(Rcnms[[i]] %in% names(re[[rname]])))
+      stop("random effects specified in re.form that were not present in original model")
+    re_x[[rname]][,Rcnms[[i]]]
+  })
+  
+  re_new <- unlist(lapply(re_new, t))  ## must TRANSPOSE RE matrices before unlisting
+  
+  Zt <- ReTrms$Zt
+  list(Zt=Zt, b=re_new, Lambdat = ReTrms$Lambdat)
+}
 
+
+
+mkNewReTrmsV2 <- function(object, newdata, re.form=NULL, na.action=na.pass,
+                          allow.new.levels=FALSE)
+{
+  ## construct (fixed) model frame in order to find out whether there are
+  ## missing data/what to do about them
+  ## need rfd to inherit appropriate na.action; need grouping
+  ## variables as well as any covariates that are included
+  ## in RE terms
+  if (is.null(newdata)) {
+    rfd <- mfnew <- model.frame(object)
+  } else {
+    mfnew <- model.frame(delete.response(terms(object,fixed.only=TRUE)),
+                         newdata, na.action=na.action)
+    ## make sure we pass na.action with new data
+    ## it would be nice to do something more principled like
+    ## rfd <- model.frame(~.,newdata,na.action=na.action)
+    ## but this adds complexities (stored terms, formula, etc.)
+    ## that mess things up later on ...
+    rfd <- na.action(newdata)
+    if (is.null(attr(rfd,"na.action")))
+      attr(rfd,"na.action") <- na.action
+  }
+  if (inherits(re.form, "formula")) {
+    ## DROP values with NAs in fixed effects
+    if (length(fit.na.action <- attr(mfnew,"na.action")) > 0) {
+      newdata <- newdata[-fit.na.action,]
+    }
+    ## note: mkReTrms automatically *drops* unused levels
+    ReTrms <- mkReTrms(findbars(re.form[[2]]), rfd)
+    ## update Lambdat (ugh, better way to do this?)
+    ReTrms <- within(ReTrms,Lambdat@x <- unname(getME(object,"theta")[Lind]))
+    if (!allow.new.levels && any(vapply(ReTrms$flist, anyNA, NA)))
+      stop("NAs are not allowed in prediction data",
+           " for grouping variables unless allow.new.levels is TRUE")
+    ns.re <- names(re <- ranef(object))
+    nRnms <- names(Rcnms <- ReTrms$cnms)
+    if (!all(nRnms %in% ns.re))
+      stop("grouping factors specified in re.form that were not present in original model")
+    new_levels <- lapply(ReTrms$flist, function(x) levels(factor(x)))
+    ## fill in/delete levels as appropriate
+    re_x <- Map(function(r,n) levelfun(r,n,allow.new.levels=allow.new.levels),
+                re[names(new_levels)], new_levels)
+    ## pick out random effects values that correspond to
+    ##  random effects incorporated in re.form ...
+    ## NB: Need integer indexing, as nRnms can be duplicated: (age|Subj) + (sex|Subj) :
+    re_new <- lapply(seq_along(nRnms), function(i) {
+      rname <- nRnms[i]
+      if (!all(Rcnms[[i]] %in% names(re[[rname]])))
+        stop("random effects specified in re.form that were not present in original model")
+      re_x[[rname]][,Rcnms[[i]]]
+    })
+    
+    re_new <- unlist(lapply(re_new, t))  ## must TRANSPOSE RE matrices before unlisting
+    ## FIXME? use vapply(re_new, t, FUN_VALUE=????)
+  }
+  Zt <- ReTrms$Zt
+  attr(Zt, "na.action") <- attr(re_new, "na.action") <- attr(mfnew, "na.action")
+  list(Zt=Zt, b=re_new, Lambdat = ReTrms$Lambdat)
+}
 
 
 

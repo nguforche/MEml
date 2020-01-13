@@ -5,8 +5,6 @@
 \title{Mixed Effect GLM}
 \usage{
 MEglm(form, data, control, nAGQ = 0)
-
-MEglm(form, data, control, nAGQ = 0)
 }
 \arguments{
 \item{form}{formula}
@@ -19,11 +17,4 @@ MEglm(form, data, control, nAGQ = 0)
 }
 \description{
 Trains a Mixed Effect generalized mixed effect models. This function just calls glmer from the Lme4 package.
-}
-\examples{
-\dontrun{
-set.seed(12345)
-mod <- MEglm(form, data= dat.trn, family=binomial) 
-
-}
 }
