@@ -273,12 +273,7 @@ rhs.form <- function(formula) {
 #'  is the minRoc distance: i.e the threshold value at the minimum distance between the ROC curve and the 
 #' to left hand corner (0,1)
 #' @return threhold 
-#' @examples
-#' data(cars)
-#' logreg <- glm(formula = vs ~ hp + wt,
-#'               family = binomial(link = "logit"), data = mtcars)
-#' prob <- logreg$fitted.values
-#' opt.thresh(prob = pob, obs = mtcars$vs) 
+
 #' @export 
 opt.thresh <- function(pred, obs){
 thresh = 0.5 
@@ -819,6 +814,231 @@ mkNewReTrmsV2 <- function(object, newdata, re.form=NULL, na.action=na.pass,
   attr(Zt, "na.action") <- attr(re_new, "na.action") <- attr(mfnew, "na.action")
   list(Zt=Zt, b=re_new, Lambdat = ReTrms$Lambdat)
 }
+
+
+
+
+myextractRules <- function (treeList, X, ntree = 100, maxdepth = 6, random = FALSE, 
+                            digits = NULL, verbose = FALSE) 
+{
+  if (is.numeric(digits)) 
+    digits <- as.integer(abs(digits))
+  levelX = list()
+  for (iX in 1:ncol(X)) levelX <- c(levelX, list(levels(X[, 
+                                                          iX])))
+  ntree = min(treeList$ntree, ntree)
+  allRulesList = list()
+  for (iTree in 1:ntree) {
+    if (random == TRUE) {
+      max_length = sample(1:maxdepth, 1, replace = FALSE)
+    }
+    else {
+      max_length = maxdepth
+    }
+    rule = list()
+    count = 0
+    rowIx = 1
+    tree <- treeList$list[[iTree]]
+    if (nrow(tree) <= 1) 
+      next
+    ruleSet = vector("list", length(which(tree[, "status"] == 
+                                            -1)))
+    res = treeVisit(tree, rowIx = rowIx, count, ruleSet, 
+                    rule, levelX, length = 0, max_length = max_length, 
+                    digits = digits)
+    allRulesList = c(allRulesList, res$ruleSet)
+  }
+  allRulesList <- allRulesList[!unlist(lapply(allRulesList, 
+                                              is.null))]
+  if(verbose) cat(paste(length(allRulesList), " rules (length<=", max_length, 
+                        ") were extracted from the first ", ntree, " trees.", 
+                        "\n", sep = ""))
+  rulesExec <- ruleList2Exec(X, allRulesList)
+  return(rulesExec)
+}
+
+
+
+
+
+
+
+##################################################################
+############# Tuning by CV concordance for GBM ###################
+##################################################################
+cv.gbm <- function(X, y, outcome=NULL, n.trees=seq(150,500,by=10), interaction.depth, n.minobsinnode = 5, 
+                   shrinkage=10^(seq(-3,-1,length=10)), bag.fraction = .5, distribution="bernoulli", foldid=NULL, nfolds=10, seed=220, verbose=FALSE){
+  
+  n <- nrow(X)
+  if(is.null(foldid))
+    foldid <- get.foldid(n,10, seed=seed)
+  nfolds <- max(foldid)
+  ns <- length(shrinkage)
+  nnt <- length(n.trees)
+  concord.mat <- foreach(s=1:ns, .combine=rbind)%dopar%{
+    concord.s <- rep(0,nnt)
+    yhat <- matrix(0,n,nnt)
+    for(k in 1:nfolds){
+      X.k <- X[foldid==k,,drop=F]
+      y.k <- y[foldid==k]
+      X.mk <- X[foldid!=k,,drop=F]
+      y.mk <- y[foldid!=k]
+      if(distribution=="poisson"){
+        outcome.mk <- outcome[foldid!=k]
+        ans.sk <- gbm.fit(X.mk, outcome.mk, offset=y.mk, n.trees=n.trees[nnt], 
+                          interaction.depth=interaction.depth, n.minobsinnode=n.minobsinnode, shrinkage=shrinkage[s], 
+                          bag.fraction=bag.fraction, distribution=distribution, verbose=verbose)
+      }
+      else{
+        ans.sk <- gbm.fit(X.mk, y.mk, n.trees=n.trees[nnt], interaction.depth=interaction.depth, 
+                          n.minobsinnode=n.minobsinnode, shrinkage=shrinkage[s], bag.fraction=bag.fraction, distribution=distribution, verbose=verbose)
+      }
+      if(distribution=="multinomial"){
+        for(t in 1:nnt){
+          foo <- predict(ans.sk, X.k, n.trees=n.trees[t],type="response", verbose=verbose)
+          fuh <- foo[cbind(1:length(y.k),as.numeric(y.k),1)]
+          fuh[is.na(fuh)] <- 0
+          yhat[foldid==k,t] <- fuh
+        }
+      }
+      else{
+        for(t in 1:nnt)
+          yhat[foldid==k,t] <- predict(ans.sk, X.k, n.trees=n.trees[t])
+      }
+    }
+    for(t in 1:nnt){
+      if(distribution=="coxph")
+        concord.s[t] <- survConcordance(y~yhat[,t])$concord
+      else if(distribution=="poisson")
+        concord.s[t] <- survConcordance(Surv(y,outcome)~yhat[,t])$concord
+      else if(distribution=="multinomial")
+        concord.s[t] <- sum(log(yhat[,t]))
+      #        concord.s[t] <- mean(y==yhat[,t])
+      else if(distribution=="gaussian")
+        concord.s[t] <- 1-sum((y-yhat[,t])^2)/sum((y-mean(y))^2)
+      else
+        concord.s[t] <- get.ROC(y, yhat[,t])$auc
+    }
+    concord.s
+  }
+  
+  inds <- which(concord.mat==max(concord.mat), arr.ind=TRUE)
+  opt.shrink <- shrinkage[inds[1]]
+  opt.n.trees <- n.trees[inds[2]]
+  opt.concord <- concord.mat[inds[1], inds[2]]
+  return(list(shrinkage=opt.shrink, n.trees=opt.n.trees, concord=opt.concord))
+}
+
+get.foldid <- function(n, nfolds=10, seed=220){
+  
+  replace.seed <- T
+  if(missing(seed))
+    replace.seed <- F
+  
+  if(replace.seed){
+    ## set seed to specified value
+    if(!any(ls(name='.GlobalEnv', all.names=T)=='.Random.seed')){
+      set.seed(1)
+    }
+    save.seed <- .Random.seed
+    set.seed(seed)  
+  }
+  
+  perm <- sample(1:n, n)
+  n.cv <- rep(floor(n/nfolds),nfolds)
+  rem <- n - n.cv[1]*nfolds
+  n.cv[index(1,rem)] <- n.cv[index(1,rem)]+1
+  foldid <- rep(0,n)
+  ind2 <- 0
+  
+  for(i in 1:nfolds){
+    ind1 <- ind2+1
+    ind2 <- ind2+n.cv[i]
+    foldid[perm[ind1:ind2]] <- i
+  }
+  if(replace.seed){
+    ## restore random seed to previous value
+    .Random.seed <<- save.seed
+  }
+  return(foldid)
+}
+
+index <- function(m,n){
+  if(m<=n) return(m:n)
+  else return(numeric(0))
+}
+
+which.equal <- function(x, y){
+  
+  n <- length(x)
+  ans <- rep(0,n)
+  for(i in 1:n){
+    ans[i] <- any(approx.equal(y,x[i]))
+  }
+  return(as.logical(ans))
+}
+
+approx.equal <- function(x, y, tol=1E-9){
+  
+  return(abs(x - y) < tol)
+}
+
+
+
+Train.Boot <- function(classifier, nboots = 2, XY.dat, resp.vars, rhs.vars, part.vars, reg.vars, 
+                       para, parallel=TRUE, n.cores = 2, seed=12345678){
+  set.seed(seed) 
+  form.rules <- as.formula(paste0(paste0(resp.vars, " ~"), paste0(rhs.vars, collapse = "+")))
+  form.glm <- as.formula(paste0(paste0(resp.vars, " ~"), paste0(c(paste0(rhs.vars,collapse="+"), "+", "(", 
+                                                                  paste0(c(rand.vars),collapse = "+"), "|", groups, ")"), collapse="")))
+  
+  if(parallel) {
+    cl <- makeCluster(n.cores)  
+    pfun <-  get("parLapply")
+  } else {
+    pfun = get("lapply")
+  }
+  
+  names(XY.dat)[names(XY.dat)==para$group] <- "old.id"
+  tmp <- Multilevel.boot(dat=XY.dat, groups="old.id", nboots = nboots)
+  trn <- cbind.data.frame(tmp$trn, XY.dat[tmp$trn$trn.ix, ])
+  tst <- cbind.data.frame(tmp$tst, XY.dat[tmp$tst$tst.ix, ])
+  
+  #if(parallel) clusterExport(cl, varlist=c("trn", "tst"))
+  #ix.boot <- unique(trn$Replicate)
+  
+  res <- pfun(X= unique(trn$Replicate), function(kk, ...){    
+    dat.trn <- trn[trn$Replicate==kk, ] 
+    dat.tst <- tst[tst$Replicate==kk, ] 
+    Y.trn <- dat.trn[, resp.vars]
+    X.trn <- dat.trn[, unique(c(reg.vars, part.vars, para$group)), drop = FALSE]
+    Y.tst <- dat.tst[, resp.vars]
+    X.tst <- dat.tst[, unique(c(reg.vars, part.vars, para$group)), drop = FALSE] 
+    
+    Train.Models <- lapply(TrainModels(), function(x) x)     
+    mod <- tryCatch(
+      {
+        lapply(classifier, function(x) {
+          if(any(x%in%c("MEglmTree", "MECTree")))
+            Train.Models[[x]](X.trn, Y.trn, X.tst, Y.tst, para, rand.vars, part.vars, reg.vars, rhs.vars, ...)
+          else 
+            if(x=="GBMrules") form <- form.rules else form <- form.glm  
+            Train.Models[[x]](trn=dat.trn, tst=dat.tst, form, para, rand.vars, ...)
+        })
+      }, error=function(e){ 
+        cat("Error in the Expression: ",  paste(e$call, collapse= ", "), 
+            ": original error message = ", e$message, "\n") 
+        list()
+      }) ## tryCatch
+    cat("Done boot :", kk,  "\n")
+    names(mod) <- classifier
+    mod
+  }, cl = cl)  ## pfun 
+  
+  stopCluster(cl)
+  res
+}
+
 
 
 

@@ -15,6 +15,7 @@ require(flexmix)
 require(gplots)
 require(bayou)
 require(PresenceAbsence)
+require(DMwR)
 
 ### predict longidutinal profile of left ventricular mass index (increase or normal) 
 ### in  patients undergoing aortic valve surgery.
@@ -44,25 +45,24 @@ levels(dat$dm) <- c("No", "Yes")
 
 seed = 123 
 para <- list(
-  method = "cv",
-  tuneLength=3,
-  number = 3,
-  n.trees=100,
-  ntree = 50, 
-  interaction.depth=4,
-  shrinkage=0.01,
+  method = "cv", # internal cross-validation method for parameter tuning. See caret package
+  tuneLength=3, # grid size for parameter search 
+  number = 3,  # number of internal cross-validation
+  n.trees=100,   # number of trees in gbm 
+  ntree = 400,   # number of trees in random forest
+  interaction.depth=5,
+  shrinkage=0.05,
   n.minobsinnode=10,
-  opt.para= TRUE, 
-  include.RE = FALSE,
-  con.tree = FALSE, 
-  max.iter = 10, alpha=0.05, 
+  opt.para= TRUE, # perform parameter tuning through internal cross-validation 
+  include.RE = TRUE,  ## to include estimated random effect as a predictor in the machine learning model
+  max.iter = 10, ## maximum number of iterations for the "expectation maximization" like step  
+  alpha=0.05, 
   minsize=20,
   maxdepth=30,
-  
-  glmer.Control = glmerControl(optimizer = "bobyqa"), 
+  family = "gaussian", 
+  glmer.Control = lmerControl(optimizer = "bobyqa"), #glmerControl 
   likelihoodCheck = TRUE, 
   nAGQ=0, 
-  
   decay = 0.05, 
   K = 3, 
   tol= 1e-5,
@@ -70,7 +70,7 @@ para <- list(
 )
 
 dat$id <- as.numeric(dat$id)  ## random effect grouping variable
-resp.vars <- "inc.lvmi"
+resp.vars <- "lvmi"
 id <- "id"
 
 ## fixed effect variables 
@@ -103,31 +103,60 @@ dat.trn <- dat[ix, ]
 dat.tst <- dat[-ix, ]
 
 
-document(pkg = Rcode) 
+## continuous outcome 
+para$glmer.Control = lmerControl(optimizer = "bobyqa")
+para$family = "gaussian"
+resp.vars <- "lvmi"
 
-classifier = c("MEglm", "MEgbm", "MErf")
-
-res <- MEml2(classifier= classifier[2], data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars,
-             rand.vars=rand.vars, para=para)
-
-
-pred <- predict(res$MEgbm, newdata= dat.tst, type="prob",  allow.new.levels = TRUE)
-perf <- Performance.measures(pred$pred[,2], dat.tst[, resp.vars])
-
+res <- MEml2(method= "MEgbm", data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars, rand.vars=rand.vars, para=para)
+pred <- predict(res, newdata= dat.tst, type="response",  allow.new.levels = TRUE)
+perf <- Performance.measures(pred$Y.star, dat.tst[, resp.vars])
+perf
 
 
-res <- MEml2(classifier= classifier[1], data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars,
-             rand.vars=rand.vars, para=para)
-pred <- predict(res$MEglm, newdata= dat.tst, type="prob",  allow.new.levels = TRUE)
-perf <- Performance.measures(pred$pred[,2], dat.tst[, resp.vars])
+res <- MEml2(method= "MErf", data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars, rand.vars=rand.vars, para=para)
+pred <- predict(res, newdata= dat.tst, type="response",  allow.new.levels = TRUE)
+perf <- Performance.measures(pred$Y.star, dat.tst[, resp.vars])
+perf
+
+## standard GBM 
+res <- MEml2(method= "GBM", data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars, rand.vars=rand.vars, para=para)
+pred <- predict(res, newdata= dat.tst, type="raw")
+perf <- Performance.measures(pred$model, dat.tst[, resp.vars])
+perf
+
+
+res <- MEml2(method= "RF", data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars, rand.vars=rand.vars, para=para)
+pred <- predict(res, newdata= dat.tst, type="raw")
+perf <- Performance.measures(pred$model, dat.tst[, resp.vars])
+perf
 
 
 
 
-res <- MEml2(classifier= classifier[3], data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars,
-             rand.vars=rand.vars, para=para)
-pred <- predict(res$MErf, newdata= dat.tst, type="prob",  allow.new.levels = TRUE)
-perf <- Performance.measures(pred$pred[,2], dat.tst[, resp.vars])
+### binary outcome 
+
+document(pkg = Rcode)
+para$glmer.Control = glmerControl(optimizer = "bobyqa")
+para$family = "binomial"
+resp.vars <- "inc.lvmi"
+
+res <- MEml2(method= "MEgbm", data = dat.trn, id=id,  resp.vars= resp.vars, rhs.vars= rhs.vars, rand.vars=rand.vars, para=para)
+pred <- predict(res, newdata= dat.tst, type="prob",  allow.new.levels = TRUE)
+perf <- Performance.measures(pred$pred[, 2], dat.tst[, resp.vars])
+perf
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

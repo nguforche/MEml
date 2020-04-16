@@ -17,6 +17,12 @@ predict.MEglm(object, newdata, type = c("prob", "class")[1],
 
 \item{allow.new.levels}{specifry if new levels of factor variables in the test set should be allowed. Default to FALSE.}
 }
+\value{
+A list with items 
+\item{Y.star}{NULL}
+\item{pred}{matrix with predicted class probabilites}
+\item{predRules}{NULL}
+}
 \description{
 Predict MEglm  
 Make predictions for Mixed Effect logistic regression. This is just a wrapper for \code{predict.merMod} in lme4 .

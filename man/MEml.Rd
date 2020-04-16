@@ -4,7 +4,7 @@
 \alias{MEml}
 \alias{MEml_lag}
 \alias{MEml2}
-\title{Calls the MEml models: MEgbm, MEgbmrules, MErfrules, MEglmtree, MECTree, etc. 
+\title{Calls the MEml models: MEgbm,  MErf, and MEglm. 
 The training and test data can be split into lagged training and testing as described in [1]}
 \usage{
 MEml_lag(lag = NULL, classifier, dat, id, rhs.vars, resp.vars,
@@ -15,14 +15,11 @@ MEml(classifier, dat.trn, dat.tst, id, rhs.vars, resp.vars,
   rand.vars = NULL, reg.vars = NULL, part.vars = NULL, para,
   max.iter = 10, seed = 1, return.model = FALSE, ...)
 
-MEml2(classifier, data, id, resp.vars, rhs.vars, rand.vars = NULL, para,
-  ...)
+MEml2(method, data, id, resp.vars, rhs.vars, rand.vars = NULL, para, ...)
 }
 \arguments{
 \item{lag}{time lag between predictors and outcome: e.g if lag = 1, then we use predictors in current
 vist to predict outcome in the next visit.}
-
-\item{classifier}{character or character vector with names of classification models. See names(\code{Train.Test}()) for list of possible models.}
 
 \item{dat}{data frame with predictors and outcome}
 
@@ -43,12 +40,14 @@ vist to predict outcome in the next visit.}
 \item{max.iter}{maximum number of iterations}
 
 \item{return.model}{should the train model be return. Otherwise the return values is only the performance metrics}
+
+\item{method}{string name of model. See names(\code{MEml_train}()) for list of possible models.}
 }
 \value{
 The train MEml model and performance matrics (as data frame) if return.model = TRUE
 }
 \description{
-Calls the MEml models: MEgbm, MEgbmrules, MErfrules, MEglmtree, MECTree, etc. 
+Calls the MEml models: MEgbm,  MErf, and MEglm. 
 The training and test data can be split into lagged training and testing as described in [1]
 }
 \details{
@@ -58,53 +57,7 @@ The training and test data can be split into lagged training and testing as desc
  \item  \code{MEml} is the same as \code{MEml_lag}, except that you pass in the training and test set. So you can 
  call \code{LongiLagSlit} and pass the derived training and test sets to \code{MEml}.  
  \item  \code{MEml2} is the same as \code{MEml}, except that you don't pass in the test set. 
- Also, it is currently implemented only for the GLMER, MEgbm and MErf models.  
-}
-}
-\examples{
-\dontrun{
-# parameter list 
-para <- list(
-method = "cv", # internal cross-validation method for parameter tuning. See caret package 
-tuneLength=3, # grid size for parameter search 
-number = 3, # number of internal cross-validation 
-n.trees=100, # number of trees in gbm 
-ntree = 50, # number of trees in random forest 
-mtry = 5, # mtry in random forest 
-interaction.depth=4,
-shrinkage=0.01,
-n.minobsinnode=10,
-opt.para= TRUE, # perform parameter tuning through internal cross-validation 
-coefReg = 0.5, 
-coefImp=1, 
-include.RE = FALSE,
-con.tree = FALSE, 
-max.iter = 10, alpha=0.05, minsize=20,maxdepth=30,  
-K = 3, decay = 0.05, tol= 1e-5,
-seed = 1 # random seed 
- )
-data(heart.valve)
-dat <- heart.valve
-dat$id <- as.numeric(dat$id)  ## random effect grouping variable
-resp.vars <- "inc.lvmi"
-id <- "id"
-## fixed effect variables 
-rhs.vars <- c("sex", "age", "time", "fuyrs", "grad", "log.grad", "bsa", "lvh", "prenyha", 
-              "redo", "size", "con.cabg", "creat", "dm", "acei", "lv", "emergenc", 
-              "hc", "sten.reg.mix", "hs")
-order.vars = "time"
-rand.vars= "time"  ## random effect variables 
-### split data into lagged training and testing 
-### predict two time points in advanced 
-dd <- LongiLagSplit(dat=dat, id=id, rhs.vars=rhs.vars,resp.vars=resp.vars,
-                   order.vars=order.vars,lag= 2)  
-train <- dd$train
-test <- dd$test
-res <- MEml(classifier="GBM", dat.trn = train, dat.tst=test, id=id, 
-            rhs.vars=dd$rhs.vars, resp.vars=dd$resp.vars,
-            rand.vars=rand.vars, para=para, max.iter = 10, seed = 1, 
-            return.model = FALSE)
-res$GBM
+ Also, it is currently implemented only for the GLMER, MEgbm, MErf, and GBM models.  
 }
 }
 \references{

@@ -21,10 +21,3 @@ threhold
 \description{
 Compute the the optimal classification threshold
 }
-\examples{
-data(cars)
-logreg <- glm(formula = vs ~ hp + wt,
-              family = binomial(link = "logit"), data = mtcars)
-prob <- logreg$fitted.values
-opt.thresh(prob = pob, obs = mtcars$vs) 
-}
